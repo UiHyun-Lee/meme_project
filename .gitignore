@@ -12,4 +12,10 @@ __pycache__/
 
 # OS files
 .DS_Store
+<<<<<<< HEAD
 .config/
+=======
+
+# Environment variables
+.env
+>>>>>>> 8af8be8 (chore(deps): add requirements.txt)
