@@ -1,0 +1,14 @@
+# Python virtual environment
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django local settings / database
+*.sqlite3
+*.log
+
+# OS files
+.DS_Store
