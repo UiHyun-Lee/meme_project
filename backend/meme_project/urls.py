@@ -17,7 +17,24 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
+from django.contrib import admin
+from django.urls import path, include
+from rest_framework import routers
+from memes.views import MemeViewSet
+from evaluations.views import EvaluationViewSet
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
+router = routers.DefaultRouter()
+router.register(r'memes', MemeViewSet, basename='meme')
+router.register(r'evaluations', EvaluationViewSet, basename='evaluation')
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
+    # JWT
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
