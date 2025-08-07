@@ -1,5 +1,4 @@
 from django.db import models
-
 from memes.models import Meme
 
 class Evaluation(models.Model):
@@ -12,5 +11,5 @@ class Evaluation(models.Model):
     created_at       = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Eval for Meme {self.meme_id}"
+        return f"Eval for Meme {self.meme}"
 
