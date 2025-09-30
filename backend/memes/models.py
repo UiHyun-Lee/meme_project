@@ -1,18 +1,30 @@
 from django.db import models
 
-class Meme(models.Model):
-    FORMAT_CHOICES = [
-        ('macro', 'Macro'),
-        ('tweet', 'Tweet'),
-        ('gif', 'GIF'),
-        ('sticker', 'Sticker'),
-    ]
-    image_url  = models.URLField()
-    caption    = models.TextField()
-    created_by = models.CharField(max_length=10)  # 'human' or 'ai'
-    format     = models.CharField(max_length=10, choices=FORMAT_CHOICES)
-    topic      = models.CharField(max_length=50, blank=True, null=True)
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class MemeTemplate(models.Model):
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="templates")
+    image = models.ImageField(upload_to="templates/")  # Cloudinary
+    description = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.format} by {self.created_by}"
+        return f"{self.category.name} - {self.id}"
+
+class Meme(models.Model):
+    template = models.ForeignKey(MemeTemplate, on_delete=models.CASCADE, related_name="memes")
+    image = models.ImageField(upload_to="memes/")
+    caption = models.TextField()
+    created_by = models.CharField(max_length=20)   # "human" or "ai"
+    format = models.CharField(max_length=50)
+    topic = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Meme {self.id} from {self.template.category.name}"

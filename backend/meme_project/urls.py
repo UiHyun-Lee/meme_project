@@ -20,7 +20,7 @@ from django.urls import path
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from memes.views import MemeViewSet
+from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet
 from evaluations.views import EvaluationViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -28,7 +28,10 @@ from rest_framework_simplejwt.views import (
 )
 
 router = routers.DefaultRouter()
-router.register(r'memes', MemeViewSet, basename='meme')
+
+router.register(r'categories', CategoryViewSet)
+router.register(r'templates', MemeTemplateViewSet)
+router.register(r'memes', MemeViewSet)
 router.register(r'evaluations', EvaluationViewSet, basename='evaluation')
 
 urlpatterns = [

@@ -1,8 +1,8 @@
 from django.db import models
-from memes.models import Meme
+from memes.models import MemeTemplate
 
 class Evaluation(models.Model):
-    meme             = models.ForeignKey(Meme, on_delete=models.CASCADE)
+    meme = models.ForeignKey("memes.Meme", on_delete=models.CASCADE, related_name="evaluations")
     humor_score      = models.IntegerField()
     cultural_score   = models.IntegerField()
     creativity_score = models.IntegerField()
