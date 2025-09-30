@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 
-const PhotoEditor = ({ onMemeCreate }) => {
+export default function PhotoEditor({ onMemeCreate }) {
   const templateImages = [
     'frontend/Meme/public/templates/template1.jpg',
     'frontend/Meme/public/templates/template2.jpg',
@@ -17,309 +17,574 @@ const PhotoEditor = ({ onMemeCreate }) => {
 
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [textElements, setTextElements] = useState([]);
-  const [textHistory, setTextHistory] = useState([]);
-  const [currentText, setCurrentText] = useState('');
+  const [currentText, setCurrentText] = useState(null);
   const [textColor, setTextColor] = useState('#ffffff');
-  const [fontSize, setFontSize] = useState(24);
-  const [isAddingText, setIsAddingText] = useState(false);
-  const [draggingElement, setDraggingElement] = useState(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [fontSize, setFontSize] = useState(32);
+  const [fontFamily, setFontFamily] = useState('Arial');
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [hasShadow, setHasShadow] = useState(true);
+  const [textInput, setTextInput] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
-  const memeContainerRef = useRef(null);
+  const imgContainerRef = useRef(null);
+  const previewRef = useRef(null);
+  const textInputRef = useRef(null);
+
+  const fontOptions = [
+    'Arial','Impact','Verdana','Times New Roman','Georgia','Helvetica','Courier New','Comic Sans MS'
+  ];
 
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template);
     setTextElements([]);
-    setTextHistory([]);
+    setCurrentText(null);
+    setTextInput('');
+
+    setTimeout(() => {
+      previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
-  const handleCanvasClick = (e) => {
-    if (!isAddingText || !selectedTemplate) return;
-
-    const rect = memeContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (currentText.trim()) {
-      addTextElement(x, y, currentText);
-      setCurrentText('');
-      setIsAddingText(false);
+  const addText = () => {
+    if (!selectedTemplate) {
+      alert('Bitte wähle zuerst eine Vorlage aus.');
+      return;
     }
-  };
 
-  const addTextElement = (x, y, text) => {
-    setTextHistory(prev => [...prev, textElements]);
+    const textToAdd = textInput.trim() || 'Drag me';
     
     const newTextElement = {
       id: Date.now(),
-      x,
-      y,
-      text,
+      text: textToAdd,
       color: textColor,
-      fontSize
+      fontSize,
+      fontFamily,
+      fontWeight: isBold ? 'bold' : 'normal',
+      fontStyle: isItalic ? 'italic' : 'normal',
+      textDecoration: isUnderline ? 'underline' : 'none',
+      textShadow: hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : '',
+      position: { x: 50, y: 50 }
     };
 
     setTextElements(prev => [...prev, newTextElement]);
-  };
-
-  const handleTextMouseDown = (e, textElement) => {
-    e.stopPropagation();
-    const rect = memeContainerRef.current.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left - textElement.x;
-    const offsetY = e.clientY - rect.top - textElement.y;
+    setCurrentText(newTextElement);
+    setTextInput('');
     
-    setDraggingElement(textElement);
-    setDragOffset({ x: offsetX, y: offsetY });
+    setTimeout(() => {
+      textInputRef.current?.focus();
+    }, 100);
   };
 
-  const handleMouseMove = (e) => {
-    if (!draggingElement || !memeContainerRef.current) return;
-
-    const rect = memeContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - dragOffset.x;
-    const y = e.clientY - rect.top - dragOffset.y;
-
+  const updateText = () => {
+    if (!currentText || !textInput.trim()) return;
+    
     setTextElements(prev => 
-      prev.map(element => 
-        element.id === draggingElement.id 
-          ? { ...element, x, y }
-          : element
+      prev.map(el => 
+        el.id === currentText.id 
+          ? { ...el, text: textInput.trim() } 
+          : el
       )
     );
+    setTextInput('');
+    setCurrentText(null);
   };
 
-  const handleMouseUp = () => {
-    if (draggingElement) {
-      setTextHistory(prev => [...prev, textElements]);
-      setDraggingElement(null);
-    }
+  const handleTextDoubleClick = (el) => {
+    setTextInput(el.text);
+    setCurrentText(el);
+    
+    setTimeout(() => {
+      textInputRef.current?.focus();
+      textInputRef.current?.select();
+    }, 100);
   };
 
-  const handleUndo = () => {
-    if (textHistory.length > 0) {
-      const previousState = textHistory[textHistory.length - 1];
-      setTextElements(previousState);
-      setTextHistory(prev => prev.slice(0, -1));
-    }
-  };
+  // Korrigierte Drag & Drop Funktion
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging || !currentText) return;
 
-  const handleTextDoubleClick = (id) => {
-    setTextHistory(prev => [...prev, textElements]);
-    setTextElements(prev => prev.filter(text => text.id !== id));
-  };
+      const container = imgContainerRef.current;
+      if (!container) return;
 
-  const handleCreateMeme = () => {
-    if (!selectedTemplate) {
-      alert('Please select a template first!');
-      return;
-    }
+      const containerRect = container.getBoundingClientRect();
+      const x = e.clientX - containerRect.left;
+      const y = e.clientY - containerRect.top;
 
-    const memeData = {
-      template: selectedTemplate,
-      textElements,
-      settings: { textColor, fontSize }
+      // Update position in state
+      setTextElements(prev => 
+        prev.map(el => 
+          el.id === currentText.id 
+            ? { ...el, position: { x, y } } 
+            : el
+        )
+      );
     };
 
-    console.log('Meme created:', memeData);
-    alert('Meme created successfully!');
-    
-    if (onMemeCreate) {
-      onMemeCreate(memeData);
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, currentText]);
+
+  const handleTextMouseDown = (e, el) => {
+    e.preventDefault();
+    setCurrentText(el);
+    setIsDragging(true);
+  };
+
+  const handleTextContextMenu = (e, el) => {
+    e.preventDefault();
+    if (window.confirm('Text löschen?')) {
+      setTextElements(prev => prev.filter(x => x.id !== el.id));
+      if (currentText?.id === el.id) {
+        setCurrentText(null);
+        setTextInput('');
+      }
+    }
+  };
+
+  const handleTextClick = (el) => {
+    setCurrentText(el);
+    setTextColor(el.color);
+    setFontSize(el.fontSize);
+    setFontFamily(el.fontFamily);
+    setIsBold(el.fontWeight === 'bold');
+    setIsItalic(el.fontStyle === 'italic');
+    setIsUnderline(el.textDecoration === 'underline');
+    setHasShadow(!!el.textShadow);
+  };
+
+  const handleImageClick = (e) => {
+    // Nur deselecten wenn auf das Bild selbst geklickt wird, nicht auf Text
+    if (e.target === imgContainerRef.current || e.target.tagName === 'IMG') {
+      setCurrentText(null);
+      setTextInput('');
+    }
+  };
+
+  const updateCurrentTextStyle = (property, value) => {
+    if (!currentText) return;
+    setTextElements(prev => prev.map(el => el.id === currentText.id ? { ...el, [property]: value } : el));
+    setCurrentText(prev => prev ? { ...prev, [property]: value } : prev);
   };
 
   const handleDownloadMeme = async () => {
-    if (!selectedTemplate || textElements.length === 0) {
-      alert('Please create a meme with text first!');
-      return;
-    }
-  
+    if (!selectedTemplate) return alert('Bitte Vorlage auswählen.');
+    if (!imgContainerRef.current) return;
+
     try {
-      const canvas = await html2canvas(memeContainerRef.current, {
-        backgroundColor: null,
-        scale: 2, // Höhere Qualität
-        logging: false
+      // Temporär alle Text-Elemente ohne Border und Hintergrund für den Download
+      const textElements = imgContainerRef.current.querySelectorAll('.meme-text');
+      const originalStyles = [];
+      
+      textElements.forEach((el, index) => {
+        originalStyles[index] = {
+          border: el.style.border,
+          backgroundColor: el.style.backgroundColor
+        };
+        el.style.border = 'none';
+        el.style.backgroundColor = 'transparent';
       });
-  
-      // Konvertiere Canvas zu JPG
-      const imageData = canvas.toDataURL('image/jpeg', 0.9);
-      
-      // Erstelle Download-Link
-      const link = document.createElement('a');
-      link.href = imageData;
-      link.download = 'meme.jpg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-    } catch (error) {
-      console.error('Error downloading meme:', error);
-      alert('Error downloading meme. Please try again.');
+
+      const canvas = await html2canvas(imgContainerRef.current, { 
+        backgroundColor: null, 
+        scale: 2, 
+        useCORS: true,
+        allowTaint: true
+      });
+
+      // Original-Stile wiederherstellen
+      textElements.forEach((el, index) => {
+        el.style.border = originalStyles[index].border;
+        el.style.backgroundColor = originalStyles[index].backgroundColor;
+      });
+
+      const data = canvas.toDataURL('image/jpeg', 0.9);
+      const a = document.createElement('a');
+      a.href = data;
+      a.download = 'meme.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Erstellen des Bildes');
     }
   };
 
-  const startAddingText = () => {
-    if (!selectedTemplate) {
-      alert('Please select a template first!');
-      return;
-    }
-    setIsAddingText(true);
+  const handleCreateMeme = () => {
+    if (!selectedTemplate) return alert('Bitte Vorlage auswählen.');
+    const memeData = { template: selectedTemplate, textElements };
+    if (onMemeCreate) onMemeCreate(memeData);
+    alert('Meme erstellt und gespeichert!');
   };
 
-  const cancelAddingText = () => {
-    setIsAddingText(false);
-    setCurrentText('');
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      if (currentText) {
+        updateText();
+      } else {
+        addText();
+      }
+    }
+  };
+
+  const handleButtonClick = () => {
+    if (currentText) {
+      updateText();
+    } else {
+      addText();
+    }
   };
 
   return (
-    <div className="photo-editor">
-      <h3>Photo Editor</h3>
-      
-      {/* Template Selection */}
-      <div className="templates-section">
-        <h4>Choose a template:</h4>
-        <div className="template-grid">
-          {templateImages.map((template, index) => (
-            <div 
-              key={index} 
-              className={`template-item ${selectedTemplate === template ? 'selected' : ''}`}
-              onClick={() => handleTemplateSelect(template)}
-            >
-              <img 
-                src={template} 
-                alt={`Template ${index + 1}`} 
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/150/333/fff?text=Template+' + (index + 1);
+    <div className="photo-editor" style={{ padding: 12 }}>
+      <h2>Create Your Meme</h2>
+
+      {/* Template Auswahl */}
+      <div style={{ marginBottom: 12 }}>
+        <h4>Choose a template</h4>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {templateImages.map((t, i) => (
+            <div key={t} style={{ cursor: 'pointer', textAlign: 'center' }}>
+              <div
+                onClick={() => handleTemplateSelect(t)}
+                style={{
+                  width: 120,
+                  height: 80,
+                  overflow: 'hidden',
+                  borderRadius: 6,
+                  border: selectedTemplate === t ? '3px solid #4f46e5' : '1px solid rgba(0,0,0,0.2)'
                 }}
-              />
-              <span>Template {index + 1}</span>
+              >
+                <img
+                  src={t}
+                  alt={`Template ${i+1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => (e.target.src = `https://via.placeholder.com/300x200?text=Template+${i+1}`)}
+                />
+              </div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>Template {i + 1}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Meme Preview with Text Placement */}
+      {/* Preview & Controls nebeneinander */}
       {selectedTemplate && (
-        <div className="meme-preview">
-          <h4>Preview: {isAddingText && 'Click to place text'}</h4>
-          <div 
-            ref={memeContainerRef}
-            className={`meme-container ${isAddingText ? 'adding-text' : ''} ${draggingElement ? 'dragging' : ''}`}
-            onClick={handleCanvasClick}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            style={{ cursor: isAddingText ? 'crosshair' : draggingElement ? 'grabbing' : 'default' }}
-          >
-            <img src={selectedTemplate} alt="Selected template" />
-            {textElements.map((textElement) => (
-              <div
-                key={textElement.id}
-                className="meme-text"
-                style={{
-                  position: 'absolute',
-                  left: `${textElement.x}px`,
-                  top: `${textElement.y}px`,
-                  color: textElement.color,
-                  fontSize: `${textElement.fontSize}px`,
-                  transform: 'translate(-50%, -50%)',
-                  cursor: draggingElement?.id === textElement.id ? 'grabbing' : 'grab',
-                  zIndex: draggingElement?.id === textElement.id ? 1000 : 1,
-                  opacity: draggingElement?.id === textElement.id ? 0.9 : 1
+        <div ref={previewRef} style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', marginTop: 20 }}>
+          {/* Preview Container mit ursprünglicher Breite und Zentrierung */}
+          <div style={{ 
+            flex: '2 1 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}>
+            <h4>Preview</h4>
+            <div
+              ref={imgContainerRef}
+              id="imgContainer"
+              onClick={handleImageClick}
+              style={{ 
+                position: 'relative', 
+                display: 'inline-block', 
+                padding: 8, 
+                background: '#fff', 
+                borderRadius: 8,
+                minHeight: '400px',
+                height: '400px',
+                overflow: 'hidden',
+                cursor: 'pointer'
+              }}
+            >
+              <img
+                src={selectedTemplate}
+                alt="Selected"
+                style={{ 
+                  display: 'block', 
+                  maxWidth: '100%', 
+                  maxHeight: '100%', 
+                  height: '100%',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  borderRadius: 6 
                 }}
-                onMouseDown={(e) => handleTextMouseDown(e, textElement)}
-                onDoubleClick={() => handleTextDoubleClick(textElement.id)}
-              >
-                {textElement.text}
-              </div>
-            ))}
+              />
+
+              {textElements.map(el => (
+                <div
+                  key={el.id}
+                  data-id={el.id}
+                  className="meme-text"
+                  onContextMenu={(e) => handleTextContextMenu(e, el)}
+                  onClick={() => handleTextClick(el)}
+                  onDoubleClick={() => handleTextDoubleClick(el)}
+                  onMouseDown={(e) => handleTextMouseDown(e, el)}
+                  style={{
+                    position: 'absolute',
+                    left: (el.position?.x ?? 50) + 'px',
+                    top: (el.position?.y ?? 50) + 'px',
+                    color: el.color,
+                    fontSize: el.fontSize + 'px',
+                    fontFamily: el.fontFamily,
+                    fontWeight: el.fontWeight,
+                    fontStyle: el.fontStyle,
+                    textDecoration: el.textDecoration,
+                    textShadow: el.textShadow,
+                    cursor: isDragging && currentText?.id === el.id ? 'grabbing' : 'grab',
+                    userSelect: 'none',
+                    padding: '4px 8px',
+                    border: currentText?.id === el.id ? '2px dashed #4f46e5' : 'none',
+                    backgroundColor: currentText?.id === el.id ? 'rgba(79,70,229,0.1)' : 'transparent',
+                    minWidth: '20px',
+                    minHeight: '20px',
+                    zIndex: 1000
+                  }}
+                >
+                  {el.text}
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.9em', color: '#666', marginTop: 8 }}>
+              Drag to move • Click to select • Double-click to edit • Right-click to delete
+            </p>
           </div>
-          <p className="drag-instruction">
-            {textElements.length > 0 && "Drag to move | Double-click to delete"}
-          </p>
+
+          {/* Controls rechts daneben mit fester Höhe */}
+          <div style={{ 
+            flex: '1 1 300px', 
+            background: 'rgba(0,0,0,0.05)', 
+            padding: 16, 
+            borderRadius: 8,
+            minHeight: '400px',
+            height: '400px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h4>Text Options</h4>
+            
+            {/* Text Input - Button wechselt zwischen Add Text und Update Text */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+                Text:
+              </label>
+              <input
+                ref={textInputRef}
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter your text..."
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                <button 
+                  onClick={handleButtonClick}
+                  disabled={!selectedTemplate}
+                  style={{ 
+                    width: '100%', 
+                    padding: '6px 8px',
+                    fontSize: '12px'
+                  }}
+                >
+                  {currentText ? 'Update Text' : 'Add Text'}
+                </button>
+              </div>
+            </div>
+
+            {/* Style Controls */}
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+                Text Color:
+              </label>
+              <input 
+                type="color" 
+                value={textColor} 
+                onChange={(e) => { 
+                  setTextColor(e.target.value); 
+                  updateCurrentTextStyle('color', e.target.value); 
+                }} 
+                disabled={!currentText}
+                style={{ width: '100%', height: '35px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+                Font Size: {fontSize}px
+              </label>
+              <input 
+                type="range" 
+                value={fontSize} 
+                min={8} 
+                max={300} 
+                onChange={(e) => { 
+                  const s = parseInt(e.target.value, 10); 
+                  setFontSize(s); 
+                  updateCurrentTextStyle('fontSize', s); 
+                }} 
+                disabled={!currentText}
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+                Font Family:
+              </label>
+              <select 
+                value={fontFamily} 
+                onChange={(e) => { 
+                  setFontFamily(e.target.value); 
+                  updateCurrentTextStyle('fontFamily', e.target.value); 
+                }} 
+                disabled={!currentText}
+                style={{ width: '100%', padding: '6px', fontSize: '14px' }}
+              >
+                {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12, flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+                Text Effects:
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <button 
+                  onClick={() => { 
+                    setIsBold(!isBold); 
+                    updateCurrentTextStyle('fontWeight', !isBold ? 'bold' : 'normal'); 
+                  }} 
+                  disabled={!currentText}
+                  style={{ 
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    backgroundColor: isBold ? '#4f46e5' : '#f3f4f6',
+                    color: isBold ? 'white' : 'black',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Bold
+                </button>
+                <button 
+                  onClick={() => { 
+                    setIsItalic(!isItalic); 
+                    updateCurrentTextStyle('fontStyle', !isItalic ? 'italic' : 'normal'); 
+                  }} 
+                  disabled={!currentText}
+                  style={{ 
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    backgroundColor: isItalic ? '#4f46e5' : '#f3f4f6',
+                    color: isItalic ? 'white' : 'black',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Italic
+                </button>
+                <button 
+                  onClick={() => { 
+                    setIsUnderline(!isUnderline); 
+                    updateCurrentTextStyle('textDecoration', !isUnderline ? 'underline' : 'none'); 
+                  }} 
+                  disabled={!currentText}
+                  style={{ 
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    backgroundColor: isUnderline ? '#4f46e5' : '#f3f4f6',
+                    color: isUnderline ? 'white' : 'black',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Underline
+                </button>
+                <button 
+                  onClick={() => { 
+                    setHasShadow(!hasShadow); 
+                    updateCurrentTextStyle('textShadow', !hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : ''); 
+                  }} 
+                  disabled={!currentText}
+                  style={{ 
+                    padding: '6px 8px',
+                    fontSize: '12px',
+                    backgroundColor: hasShadow ? '#4f46e5' : '#f3f4f6',
+                    color: hasShadow ? 'white' : 'black',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px'
+                  }}
+                >
+                  Shadow
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Text Input and Controls */}
-      <div className="text-controls">
-        <h2>Add Text</h2>
-        
-        {isAddingText ? (
-          <div className="adding-text-mode">
-            <div className="input-group">
-              <label>Enter text:</label>
-              <textarea
-                value={currentText}
-                onChange={(e) => setCurrentText(e.target.value)}
-                placeholder="Enter your text..."
-                rows={3}
-                autoFocus
-              />
-            </div>
-            <div className="button-group">
-              <button onClick={cancelAddingText}>Cancel</button>
-              <span>Click on the image to place the text</span>
-            </div>
-          </div>
-        ) : (
-          <div className="normal-mode">
-            <div className="input-group">
-              <label>Text Color:</label>
-              <input
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-              />
-            </div>
-
-            <div className="input-group">
-              <label>Font Size: {fontSize}px</label>
-              <input
-                type="range"
-                min="16"
-                max="48"
-                value={fontSize}
-                onChange={(e) => setFontSize(parseInt(e.target.value))}
-              />
-            </div>
-
-            <div className="button-group">
-              <button onClick={startAddingText} className="add-text-btn">
-                Add Text
-              </button>
-              
-              <button 
-                onClick={handleUndo} 
-                disabled={textHistory.length === 0}
-                className="undo-btn"
-              >
-                Undo
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="action-buttons">
-        <button 
-          onClick={handleCreateMeme} 
-          disabled={!selectedTemplate}
-          className="create-meme-btn"
-        >
-          Submit Meme
-        </button>
-        
-        <button 
-          onClick={handleDownloadMeme}
-          disabled={!selectedTemplate || textElements.length === 0}
-          className="download-meme-btn"
-        >
-          Download as JPG
-        </button>
-      </div>
+      {/* Download und Submit Buttons mit unterschiedlichen Farben */}
+      {selectedTemplate && (
+        <div style={{ 
+          marginTop: '40px', 
+          padding: '20px', 
+          textAlign: 'center', 
+          borderTop: '2px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '20px'
+        }}>
+          <button 
+            onClick={handleDownloadMeme} 
+            disabled={!selectedTemplate || textElements.length === 0}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Download Meme
+          </button>
+          <button 
+            onClick={handleCreateMeme} 
+            disabled={!selectedTemplate}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              backgroundColor: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Submit Meme
+          </button>
+        </div>
+      )}
     </div>
   );
-};
-
-export default PhotoEditor;
+}
