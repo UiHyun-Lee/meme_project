@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 
 const Leaderboard = () => {
-  const [timeFilter, setTimeFilter] = useState('daily')
-  const [typeFilter, setTypeFilter] = useState('all') // 'all', 'human', 'ai'
+  const [activeTab, setActiveTab] = useState('individual') // 'individual', 'humansVsAi', 'topMemes'
 
   const leaderboardData = [
     { rank: 1, username: 'MemeMaker260', type: 'Human', score: 1412, avatar: 'frontend/Meme/public/templates/template1.jpg' },
@@ -16,14 +15,6 @@ const Leaderboard = () => {
     { rank: 9, username: 'GPT-Memer', type: 'AI', score: 598, avatar: 'frontend/Meme/public/templates/template9.jpg' },
     { rank: 10, username: 'LaughMaster', type: 'Human', score: 532, avatar: 'frontend/Meme/public/templates/template10.jpg' }
   ]
-
-  // Filtered data based on type selection
-  const filteredData = leaderboardData.filter(entry => {
-    if (typeFilter === 'all') return true
-    if (typeFilter === 'human') return entry.type === 'Human'
-    if (typeFilter === 'ai') return entry.type === 'AI'
-    return true
-  })
 
   // Summary leaderboard (Human vs AI)
   const summaryData = [
@@ -71,149 +62,123 @@ const Leaderboard = () => {
       <p>Who Reigns Supreme in the Meme Arena?</p>
       <p>Here are the top creators—both human and AI—ranked by wit, upvotes, and raw meme power. Think you're funnier? Prove it.</p>
       
-      {/* Time Filters */}
-      <div className="time-filters">
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
         <button 
-          className={timeFilter === 'daily' ? 'active' : ''}
-          onClick={() => setTimeFilter('daily')}
+          className={activeTab === 'individual' ? 'active' : ''}
+          onClick={() => setActiveTab('individual')}
         >
-          Daily
+          Individual Rankings
         </button>
         <button 
-          className={timeFilter === 'weekly' ? 'active' : ''}
-          onClick={() => setTimeFilter('weekly')}
+          className={activeTab === 'humansVsAi' ? 'active' : ''}
+          onClick={() => setActiveTab('humansVsAi')}
         >
-          Weekly
+          Humans vs AI
         </button>
         <button 
-          className={timeFilter === 'allTime' ? 'active' : ''}
-          onClick={() => setTimeFilter('allTime')}
+          className={activeTab === 'topMemes' ? 'active' : ''}
+          onClick={() => setActiveTab('topMemes')}
         >
-          All Time
+          Top 10 Memes
         </button>
       </div>
 
-      {/* Type Filters */}
-      <div className="type-filters">
-        <h4>Filter by Type:</h4>
-        <div className="filter-buttons">
-          <button 
-            className={typeFilter === 'all' ? 'active' : ''}
-            onClick={() => setTypeFilter('all')}
-          >
-            All
-          </button>
-          <button 
-            className={typeFilter === 'human' ? 'active' : ''}
-            onClick={() => setTypeFilter('human')}
-          >
-            Human
-          </button>
-          <button 
-            className={typeFilter === 'ai' ? 'active' : ''}
-            onClick={() => setTypeFilter('ai')}
-          >
-            AI
-          </button>
-        </div>
-      </div>
+      {/* Individual Rankings Tab */}
+      {activeTab === 'individual' && (
+        <div className="tab-content">
+          <div className="time-filters">
+            <button className="active">Daily</button>
+            <button>Weekly</button>
+            <button>All Time</button>
+          </div>
 
-      {/* Main Leaderboard Table */}
-      <div className="main-leaderboard">
-        <h3>Individual Rankings</h3>
-        <table className="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>User</th>
-              <th>Type</th>
-              <th>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((entry) => (
-              <tr key={entry.rank}>
-                <td>{entry.rank}</td>
-                <td className="user-cell">
-                  <img 
-                    src={entry.avatar} 
-                    alt={entry.username}
-                    className="user-avatar"
-                    onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/40/333/fff?text=U';
-                    }}
-                  />
-                  {entry.username}
-                </td>
-                <td>
-                  <span className={`type-badge ${entry.type.toLowerCase()}`}>
-                    {entry.type}
-                  </span>
-                </td>
-                <td>{entry.score}</td>
+          <table className="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>User</th>
+                <th>Type</th>
+                <th>Score</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Summary Leaderboard (Human vs AI) */}
-      <div className="summary-leaderboard">
-        <h3>Human vs AI - Total Score</h3>
-        <div className="summary-cards">
-          {summaryData.map((item, index) => (
-            <div key={item.type} className="summary-card">
-              <h4>{item.type}</h4>
-              <div className="summary-stats">
-                <p>Total Score: <strong>{item.score}</strong></p>
-                <p>Top Creators: <strong>{item.count}</strong></p>
-                <p>Avg Score: <strong>{item.avgScore}</strong></p>
-              </div>
-              <div className={`rank-badge ${index === 0 ? 'first' : 'second'}`}>
-                #{index + 1}
-              </div>
-            </div>
-          ))}
+            </thead>
+            <tbody>
+              {leaderboardData.map((entry) => (
+                <tr key={entry.rank}>
+                  <td>{entry.rank}</td>
+                  <td className="user-cell">
+                    <img 
+                      src={entry.avatar} 
+                      alt={entry.username}
+                      className="user-avatar"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/40/333/fff?text=U';
+                      }}
+                    />
+                    {entry.username}
+                  </td>
+                  <td>
+                    <span className={`type-badge ${entry.type.toLowerCase()}`}>
+                      {entry.type}
+                    </span>
+                  </td>
+                  <td>{entry.score}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
 
-      
-
-      {/* Top Memes Gallery */}
-      <div className="top-memes-gallery">
-        <h3>Top 10 Memes of the Week</h3>
-        <div className="meme-grid">
-          {topMemes.map((meme) => (
-            <div key={meme.id} className="meme-gallery-item">
-              <img 
-                src={meme.image} 
-                alt={`Top meme ${meme.id}`}
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/150/333/fff?text=Meme';
-                }}
-              />
-              <div className="meme-info">
-                <div className="meme-likes">❤️ {meme.likes}</div>
-                <div className="meme-author">
-                  by {meme.author}
-                  <span className={`author-type ${meme.type.toLowerCase()}`}>
-                    {meme.type}
-                  </span>
+      {/* Humans vs AI Tab */}
+      {activeTab === 'humansVsAi' && (
+        <div className="tab-content">
+          <div className="summary-cards">
+            {summaryData.map((item, index) => (
+              <div key={item.type} className="summary-card">
+                <h4>{item.type}</h4>
+                <div className="summary-stats">
+                  <p>Total Score: <strong>{item.score}</strong></p>
+                  <p>Top Creators: <strong>{item.count}</strong></p>
+                  <p>Avg Score: <strong>{item.avgScore}</strong></p>
+                </div>
+                <div className={`rank-badge ${index === 0 ? 'first' : 'second'}`}>
+                  #{index + 1}
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/*<div style={{marginTop: '30px', display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap'}}>
-        <span>Topic</span>
-        <span>Topic</span>
-        <span>Topic</span>
-        <span>Page</span>
-        <span>Page</span>
-        <span>Page</span>
-      </div>*/}
+      {/* Top Memes Tab */}
+      {activeTab === 'topMemes' && (
+        <div className="tab-content">
+          <div className="meme-grid">
+            {topMemes.map((meme) => (
+              <div key={meme.id} className="meme-gallery-item">
+                <img 
+                  src={meme.image} 
+                  alt={`Top meme ${meme.id}`}
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/150/333/fff?text=Meme';
+                  }}
+                />
+                <div className="meme-info">
+                  <div className="meme-rank">#{meme.id}</div>
+                  <div className="meme-likes">❤️ {meme.likes}</div>
+                  <div className="meme-author">
+                    by {meme.author}
+                    <span className={`author-type ${meme.type.toLowerCase()}`}>
+                      {meme.type}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
