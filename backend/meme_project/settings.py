@@ -75,6 +75,9 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = "meme_project.urls"
 
+# open ai api
+OPENAI_API_KEY = config("OPENAI_API_KEY")
+
 # Cors domain config
 CORS_ALLOW_ALL_ORIGINS = True
 # CORS_ALLOWED_ORIGINS = [
