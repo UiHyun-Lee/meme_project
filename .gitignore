@@ -12,4 +12,8 @@ __pycache__/
 
 # OS files
 .DS_Store
+
+# Environment variables
+.env
 .config/
+
