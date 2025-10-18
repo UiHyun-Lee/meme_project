@@ -1,75 +1,152 @@
-import openai
+import json
 import requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import cloudinary.uploader
-from django.conf import settings
 from openai import OpenAI
-import textwrap
+from django.conf import settings
 
-openai.api_key = settings.OPENAI_API_KEY
-client = OpenAI()
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-def generate_ai_caption(category_name: str, template_desc: str) -> str:
-    prompt = f"Write a short, funny meme caption for the category '{category_name}' using this template: {template_desc}"
+
+def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
+
+    prompt = f"""
+    You are an expert meme designer AI.
+
+    You are given a real image (not to generate new ones) with the following info:
+    - Category: {category_name}
+    - Description: {template_desc}
+    - Image URL: {template_url}
+
+    Your task:
+    1. Analyze the image and imagine how a human would make a meme using it.
+    2. Create between 1 and N meme designs (N ≥ 1). e.g. between 7 and 10 memems.
+    3. For each meme, define one or more text captions.
+    4. Output ONLY valid JSON.
+    5. For each caption, define:
+       - text: the meme caption
+       - position: top|bottom|center|custom
+       - x, y (if custom)
+       - font_face (e.g., Impact, Arial, Comic Sans MS)
+       - font_size (integer)
+       - color (CSS or RGB color)
+       - stroke_color
+       - stroke_width
+       - bold, italic, underline
+       - shadow {{
+            "enabled": true/false,
+            "x_offset": integer,
+            "y_offset": integer,
+            "color": string,
+            "blur": integer
+         }}
+
+    DO NOT generate or describe a new image.
+    Only design meme text and style that fits the existing image.
+
+    Return ONLY valid JSON in this format:
+    {{
+      "memes": [
+        {{
+          "captions": [
+            {{
+              "text": "When you realize your exam is tomorrow",
+              "position": "top",
+              "x": 120,
+              "y": 80,
+              "font_face": "Impact",
+              "font_size": 48,
+              "color": "white",
+              "stroke_color": "black",
+              "stroke_width": 3,
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "shadow": {{
+                "enabled": true,
+                "x_offset": 3,
+                "y_offset": 3,
+                "color": "black",
+                "blur": 2
+              }}
+            }}
+          ]
+        }}
+      ]
+    }}
+    """
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a meme caption generator. Keep it short and funny."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=50
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=900,
+        response_format = {"type": "json_object"}
     )
-    return response.choices[0].message.content.strip()
+
+    try:
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print("JSON parse error:", e)
+        return {"error": "Invalid JSON from AI"}
 
 
-def create_meme_image(template_url: str, caption: str) -> str:
-    # template img download
+def apply_ai_text_to_image(template_url: str, captions: list) -> str:
+
     response = requests.get(template_url)
     image = Image.open(BytesIO(response.content)).convert("RGB")
-
     draw = ImageDraw.Draw(image)
-
-    # font config
-    try:
-        font = ImageFont.truetype("/Library/Fonts/Arial.ttf", 40)  # macOS
-    except:
-        try:
-            font = ImageFont.truetype("DejaVuSans-Bold.ttf", 40)   # Linux
-        except:
-            font = ImageFont.load_default()
-
     W, H = image.size
 
-    # text size config
-    sample_bbox = draw.textbbox((0, 0), "A", font=font)
-    char_width = sample_bbox[2] - sample_bbox[0]
+    for cap in captions:
+        text = cap.get("text", "")
+        font_face = cap.get("font_face", "Arial")
+        font_size = cap.get("font_size", 40)
+        color = cap.get("color", "white")
+        stroke_color = cap.get("stroke_color", "black")
+        stroke_width = cap.get("stroke_width", 2)
 
-    # line length
-    max_chars_per_line = max(1, int((W * 0.8) / char_width))
+        # font load
+        try:
+            font = ImageFont.truetype(f"/Library/Fonts/{font_face}.ttf", font_size)
+        except:
+            try:
+                font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
 
-    # line
-    wrapped_text = textwrap.fill(caption, width=max_chars_per_line)
+        # position config
+        bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
+        text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
-    # config
-    bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font, spacing=5)
-    text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        pos = cap.get("position", "bottom")
+        if pos == "top":
+            x, y = (W - text_w) / 2, 30
+        elif pos == "bottom":
+            x, y = (W - text_w) / 2, H - text_h - 40
+        elif pos == "center":
+            x, y = (W - text_w) / 2, (H - text_h) / 2
+        elif pos == "custom":
+            x, y = cap.get("x", 50), cap.get("y", 50)
+        else:
+            x, y = (W - text_w) / 2, H - text_h - 40
 
-    # position
-    x = (W - text_width) / 2
-    y = H - text_height - 40
+        # shadow
+        shadow = cap.get("shadow", {})
+        if shadow.get("enabled", False):
+            sx = x + shadow.get("x_offset", 2)
+            sy = y + shadow.get("y_offset", 2)
+            draw.text((sx, sy), text, font=font, fill=shadow.get("color", "black"))
 
-    # print
-    draw.multiline_text(
-        (x, y),
-        wrapped_text,
-        font=font,
-        fill="white",
-        stroke_width=3,
-        stroke_fill="black",
-        align="center",
-        spacing=5
-    )
+        # text
+        draw.text(
+            (x, y),
+            text,
+            font=font,
+            fill=color,
+            stroke_width=stroke_width,
+            stroke_fill=stroke_color
+        )
 
     # Cloudinary upload
     buffer = BytesIO()
