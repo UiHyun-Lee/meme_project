@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-(919nu*#mi0n=m_&9ke*zp9aqu=3-v)@@&jj)y+!%e)gv-*_aj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '1.0.0.127.in-addr.arpa']
 
 # Set load env
 env = environ.Env()
