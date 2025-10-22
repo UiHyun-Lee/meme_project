@@ -19,8 +19,8 @@ const Voting = () => {
 
   const reportMeme = (memeId) => {
     // Logik zum Melden eines Memes
-    console.log('Meme gemeldet:', memeId)
-    alert('Danke für deine Meldung! Wir werden das Meme überprüfen.')
+    console.log('Meme reported:', memeId)
+    alert('Thanks for reporting it! We will investigate the meme.')
   }
 
   return (
@@ -48,7 +48,7 @@ const Voting = () => {
             className="report-button"
             onClick={() => reportMeme('memeA')}
           >
-            🚫 Melden
+            🚫 Report
           </button>
         </div>
         
@@ -65,14 +65,14 @@ const Voting = () => {
             className="report-button"
             onClick={() => reportMeme('memeB')}
           >
-            🚫 Melden
+            🚫 Report
           </button>
         </div>
       </div>
 
       {voted && (
         <div className="vote-feedback">
-          <p>Danke für deine Stimme! 🎉</p>
+          <p>Thank you for your vote! 🎉</p>
         </div>
       )}
     </div>
