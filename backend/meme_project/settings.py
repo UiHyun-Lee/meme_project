@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import environ
 from decouple import config
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,7 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'rest_framework',
-
+    # "django_filters",
     # Cors
     "corsheaders",
     # Cloudinary
@@ -93,7 +94,6 @@ CLOUDINARY_STORAGE = {
 }
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -116,15 +116,14 @@ WSGI_APPLICATION = "meme_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 
-
 DATABASES = {
     'default': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     env('DB_NAME'),
-        'USER':     env('DB_USER'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
         'PASSWORD': env('DB_PASSWORD'),
-        'HOST':     env('DB_HOST'),
-        'PORT':     env('DB_PORT'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
