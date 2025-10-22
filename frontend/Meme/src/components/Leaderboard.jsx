@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 
 const Leaderboard = () => {
-  const [activeTab, setActiveTab] = useState('individual') // 'individual', 'humansVsAi', 'topMemes'
+  const [activeTab, setActiveTab] = useState('individual')
+  const [selectedMeme, setSelectedMeme] = useState(null) // Für vergrößerte Meme-Ansicht
 
   const leaderboardData = [
     { rank: 1, username: 'MemeMaker260', type: 'Human', score: 1412, avatar: 'frontend/Meme/public/templates/template1.jpg' },
@@ -16,83 +17,61 @@ const Leaderboard = () => {
     { rank: 10, username: 'LaughMaster', type: 'Human', score: 532, avatar: 'frontend/Meme/public/templates/template10.jpg' }
   ]
 
-  // Summary leaderboard (Human vs AI)
   const summaryData = [
     {
       type: 'Human',
-      score: leaderboardData
-        .filter(entry => entry.type === 'Human')
-        .reduce((sum, entry) => sum + entry.score, 0),
-      count: leaderboardData.filter(entry => entry.type === 'Human').length,
-      avgScore: Math.round(leaderboardData
-        .filter(entry => entry.type === 'Human')
-        .reduce((sum, entry) => sum + entry.score, 0) / 
-        leaderboardData.filter(entry => entry.type === 'Human').length)
+      score: leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.score, 0),
+      count: leaderboardData.filter(e => e.type === 'Human').length,
+      avgScore: Math.round(
+        leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.score, 0) /
+        leaderboardData.filter(e => e.type === 'Human').length
+      )
     },
     {
       type: 'AI',
-      score: leaderboardData
-        .filter(entry => entry.type === 'AI')
-        .reduce((sum, entry) => sum + entry.score, 0),
-      count: leaderboardData.filter(entry => entry.type === 'AI').length,
-      avgScore: Math.round(leaderboardData
-        .filter(entry => entry.type === 'AI')
-        .reduce((sum, entry) => sum + entry.score, 0) / 
-        leaderboardData.filter(entry => entry.type === 'AI').length)
+      score: leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.score, 0),
+      count: leaderboardData.filter(e => e.type === 'AI').length,
+      avgScore: Math.round(
+        leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.score, 0) /
+        leaderboardData.filter(e => e.type === 'AI').length
+      )
     }
   ]
 
-  // Top 10 memes of the week (using available images)
   const topMemes = [
-    { id: 1, image: 'frontend/Meme/public/meme1.jpg', likes: 324, author: 'MemeMaker260', type: 'Human' },
-    { id: 2, image: 'frontend/Meme/public/meme2.jpg', likes: 298, author: 'OpenAI', type: 'AI' },
-    { id: 3, image: 'frontend/Meme/public/templates/template1.jpg', likes: 267, author: 'MemeMaker7', type: 'Human' },
-    { id: 4, image: 'frontend/Meme/public/templates/template2.jpg', likes: 245, author: 'Grok', type: 'AI' },
-    { id: 5, image: 'frontend/Meme/public/templates/template3.jpg', likes: 223, author: 'MemeMaker127', type: 'Human' },
-    { id: 6, image: 'frontend/Meme/public/templates/template4.jpg', likes: 198, author: 'Claude', type: 'AI' },
-    { id: 7, image: 'frontend/Meme/public/templates/template5.jpg', likes: 176, author: 'Deepseek', type: 'AI' },
-    { id: 8, image: 'frontend/Meme/public/templates/template6.jpg', likes: 154, author: 'MemeKing42', type: 'Human' },
-    { id: 9, image: 'frontend/Meme/public/templates/template7.jpg', likes: 143, author: 'GPT-Memer', type: 'AI' },
-    { id: 10, image: 'frontend/Meme/public/templates/template8.jpg', likes: 132, author: 'LaughMaster', type: 'Human' }
+    { id: 1, image: 'frontend/Meme/public/meme1.jpg', points: 324, author: 'MemeMaker260', type: 'Human' },
+    { id: 2, image: 'frontend/Meme/public/meme2.jpg', points: 298, author: 'OpenAI', type: 'AI' },
+    { id: 3, image: 'frontend/Meme/public/templates/template1.jpg', points: 267, author: 'MemeMaker7', type: 'Human' },
+    { id: 4, image: 'frontend/Meme/public/templates/template2.jpg', points: 245, author: 'Grok', type: 'AI' },
+    { id: 5, image: 'frontend/Meme/public/templates/template3.jpg', points: 223, author: 'MemeMaker127', type: 'Human' },
+    { id: 6, image: 'frontend/Meme/public/templates/template4.jpg', points: 198, author: 'Claude', type: 'AI' },
+    { id: 7, image: 'frontend/Meme/public/templates/template5.jpg', points: 176, author: 'Deepseek', type: 'AI' },
+    { id: 8, image: 'frontend/Meme/public/templates/template6.jpg', points: 154, author: 'MemeKing42', type: 'Human' },
+    { id: 9, image: 'frontend/Meme/public/templates/template7.jpg', points: 143, author: 'GPT-Memer', type: 'AI' },
+    { id: 10, image: 'frontend/Meme/public/templates/template8.jpg', points: 132, author: 'LaughMaster', type: 'Human' }
   ]
 
   return (
-    <div className="leaderboard-container">
+    <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
       <h2>Leaderboard</h2>
       <p>Who Reigns Supreme in the Meme Arena?</p>
-      <p>Here are the top creators—both human and AI—ranked by wit, upvotes, and raw meme power. Think you're funnier? Prove it.</p>
-      
-      {/* Tab Navigation */}
+
       <div className="tab-navigation">
-        <button 
-          className={activeTab === 'individual' ? 'active' : ''}
-          onClick={() => setActiveTab('individual')}
-        >
-          Individual Rankings
-        </button>
-        <button 
-          className={activeTab === 'humansVsAi' ? 'active' : ''}
-          onClick={() => setActiveTab('humansVsAi')}
-        >
-          Humans vs AI
-        </button>
-        <button 
-          className={activeTab === 'topMemes' ? 'active' : ''}
-          onClick={() => setActiveTab('topMemes')}
-        >
-          Top 10 Memes
-        </button>
+        <button className={activeTab === 'individual' ? 'active' : ''} onClick={() => setActiveTab('individual')}>Individual Rankings</button>
+        <button className={activeTab === 'humansVsAi' ? 'active' : ''} onClick={() => setActiveTab('humansVsAi')}>Humans vs AI</button>
+        <button className={activeTab === 'topMemes' ? 'active' : ''} onClick={() => setActiveTab('topMemes')}>Top 10 Memes</button>
       </div>
 
-      {/* Individual Rankings Tab */}
+      {/* Individual Rankings */}
       {activeTab === 'individual' && (
         <div className="tab-content">
-          <div className="time-filters">
-            <button className="active">Daily</button>
-            <button>Weekly</button>
-            <button>All Time</button>
-          </div>
-
           <table className="leaderboard-table">
             <thead>
               <tr>
@@ -111,17 +90,11 @@ const Leaderboard = () => {
                       src={entry.avatar} 
                       alt={entry.username}
                       className="user-avatar"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/40/333/fff?text=U';
-                      }}
+                      onError={(e) => e.target.src = 'https://via.placeholder.com/40/333/fff?text=U'}
                     />
                     {entry.username}
                   </td>
-                  <td>
-                    <span className={`type-badge ${entry.type.toLowerCase()}`}>
-                      {entry.type}
-                    </span>
-                  </td>
+                  <td><span className={`type-badge ${entry.type.toLowerCase()}`}>{entry.type}</span></td>
                   <td>{entry.score}</td>
                 </tr>
               ))}
@@ -130,7 +103,7 @@ const Leaderboard = () => {
         </div>
       )}
 
-      {/* Humans vs AI Tab */}
+      {/* Humans vs AI */}
       {activeTab === 'humansVsAi' && (
         <div className="tab-content">
           <div className="summary-cards">
@@ -142,8 +115,35 @@ const Leaderboard = () => {
                   <p>Top Creators: <strong>{item.count}</strong></p>
                   <p>Avg Score: <strong>{item.avgScore}</strong></p>
                 </div>
-                <div className={`rank-badge ${index === 0 ? 'first' : 'second'}`}>
-                  #{index + 1}
+                <div className={`rank-badge ${index === 0 ? 'first' : 'second'}`}>#{index + 1}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Memes */}
+      {activeTab === 'topMemes' && (
+        <div className="tab-content">
+          <div className="meme-grid">
+            {topMemes.map((meme) => (
+              <div 
+                key={meme.id} 
+                className="meme-gallery-item"
+                onClick={() => setSelectedMeme(meme)} // Klick öffnet vergrößerte Ansicht
+              >
+                <img 
+                  src={meme.image} 
+                  alt={`Top meme ${meme.id}`}
+                  onError={(e) => e.target.src = 'https://via.placeholder.com/150/333/fff?text=Meme'}
+                />
+                <div className="meme-info">
+                  <div className="meme-rank">#{meme.id}</div>
+                  <div className="meme-likes">🏆 {meme.points} Points</div>
+                  <div className="meme-author">
+                    by {meme.author}
+                    <span className={`author-type ${meme.type.toLowerCase()}`}>{meme.type}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -151,31 +151,15 @@ const Leaderboard = () => {
         </div>
       )}
 
-      {/* Top Memes Tab */}
-      {activeTab === 'topMemes' && (
-        <div className="tab-content">
-          <div className="meme-grid">
-            {topMemes.map((meme) => (
-              <div key={meme.id} className="meme-gallery-item">
-                <img 
-                  src={meme.image} 
-                  alt={`Top meme ${meme.id}`}
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/150/333/fff?text=Meme';
-                  }}
-                />
-                <div className="meme-info">
-                  <div className="meme-rank">#{meme.id}</div>
-                  <div className="meme-likes">❤️ {meme.likes}</div>
-                  <div className="meme-author">
-                    by {meme.author}
-                    <span className={`author-type ${meme.type.toLowerCase()}`}>
-                      {meme.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+      {/* Meme Modal */}
+      {selectedMeme && (
+        <div className="meme-modal" onClick={() => setSelectedMeme(null)}>
+          <div className="meme-modal-content" onClick={(e) => e.stopPropagation()}>
+            <img src={selectedMeme.image} alt="Meme full view" />
+            <p>
+              <strong>{selectedMeme.author}</strong> ({selectedMeme.type}) – {selectedMeme.points} Punkte
+            </p>
+            <button className="close-btn" onClick={() => setSelectedMeme(null)}>Close</button>
           </div>
         </div>
       )}

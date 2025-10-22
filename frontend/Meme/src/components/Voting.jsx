@@ -24,7 +24,14 @@ const Voting = () => {
   }
 
   return (
-    <div className="voting-container">
+    <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
       {/*<h2>Voting</h2>
       <p>Two memes enter. One meme leaves.</p>*/}
       <p className="topic-text">This week's topic: <strong>School</strong></p>

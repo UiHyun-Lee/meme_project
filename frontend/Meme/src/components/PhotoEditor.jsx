@@ -2,19 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 
 export default function PhotoEditor({ onMemeCreate }) {
-  const templateImages = [
-    'frontend/Meme/public/templates/template1.jpg',
-    'frontend/Meme/public/templates/template2.jpg',
-    'frontend/Meme/public/templates/template3.jpg',
-    'frontend/Meme/public/templates/template4.jpg',
-    'frontend/Meme/public/templates/template5.jpg',
-    'frontend/Meme/public/templates/template6.jpg',
-    'frontend/Meme/public/templates/template7.jpg',
-    'frontend/Meme/public/templates/template8.jpg',
-    'frontend/Meme/public/templates/template9.jpg',
-    'frontend/Meme/public/templates/template10.jpg'
-  ];
-
+  const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [textElements, setTextElements] = useState([]);
   const [currentText, setCurrentText] = useState(null);
@@ -27,14 +15,49 @@ export default function PhotoEditor({ onMemeCreate }) {
   const [hasShadow, setHasShadow] = useState(true);
   const [textInput, setTextInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const imgContainerRef = useRef(null);
   const previewRef = useRef(null);
   const textInputRef = useRef(null);
 
   const fontOptions = [
-    'Arial','Impact','Verdana','Times New Roman','Georgia','Helvetica','Courier New','Comic Sans MS'
+    'Arial', 'Impact', 'Verdana', 'Times New Roman', 'Georgia', 
+    'Helvetica', 'Courier New', 'Comic Sans MS'
   ];
+
+  // Templates vom Backend laden
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates/');
+        if (response.ok) {
+          const data = await response.json();
+          setTemplates(data);
+        } else {
+          console.error('Fehler beim Laden der Templates');
+          // Fallback auf lokale Templates
+          setTemplates(generateFallbackTemplates());
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Templates:', error);
+        // Fallback auf lokale Templates
+        setTemplates(generateFallbackTemplates());
+      }
+    };
+    
+    fetchTemplates();
+  }, []);
+
+  // Fallback Templates falls Backend nicht verfügbar
+  const generateFallbackTemplates = () => {
+    return Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      image: `frontend/Meme/public/templates/template${i + 1}.jpg`,
+      description: `Template ${i + 1}`,
+      category: { name: 'General' }
+    }));
+  };
 
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template);
@@ -224,11 +247,95 @@ export default function PhotoEditor({ onMemeCreate }) {
     }
   };
 
-  const handleCreateMeme = () => {
-    if (!selectedTemplate) return alert('Bitte Vorlage auswählen.');
-    const memeData = { template: selectedTemplate, textElements };
-    if (onMemeCreate) onMemeCreate(memeData);
-    alert('Meme erstellt und gespeichert!');
+  const handleCreateMeme = async () => {
+    if (!selectedTemplate) {
+      alert('Bitte Vorlage auswählen.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Meme als Bild generieren
+      const textElements = imgContainerRef.current.querySelectorAll('.meme-text');
+      const originalStyles = [];
+      
+      // Temporär Stile für Screenshot anpassen
+      textElements.forEach((el, index) => {
+        originalStyles[index] = {
+          border: el.style.border,
+          backgroundColor: el.style.backgroundColor
+        };
+        el.style.border = 'none';
+        el.style.backgroundColor = 'transparent';
+      });
+
+      const canvas = await html2canvas(imgContainerRef.current, { 
+        backgroundColor: null, 
+        scale: 2, 
+        useCORS: true,
+        allowTaint: true
+      });
+
+      // Original-Stile wiederherstellen
+      textElements.forEach((el, index) => {
+        el.style.border = originalStyles[index].border;
+        el.style.backgroundColor = originalStyles[index].backgroundColor;
+      });
+
+      // Canvas zu Base64 konvertieren
+      const imageData = canvas.toDataURL('image/jpeg', 0.9);
+      
+      // Caption aus Text-Elementen erstellen
+      const caption = textElements.length > 0 
+        ? textElements.map(el => el.textContent).join(' | ')
+        : 'Custom Meme';
+      
+      // Meme-Daten für Upload vorbereiten
+      const memeData = {
+        template_id: selectedTemplate.id,
+        image: imageData,
+        caption: caption,
+        created_by: "human",
+        topic: "School"
+      };
+
+      console.log('Sende Meme an Backend...', {
+        template_id: selectedTemplate.id,
+        caption: caption,
+        image_length: imageData.length
+      });
+
+      // Meme an Backend senden
+      const response = await fetch('/api/upload_meme/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(memeData)
+      });
+
+      if (response.ok) {
+        const savedMeme = await response.json();
+        console.log('Meme erfolgreich hochgeladen:', savedMeme);
+        
+        // Callback aufrufen
+        if (onMemeCreate) {
+          onMemeCreate(savedMeme);
+        }
+        
+        alert('Meme erfolgreich erstellt und hochgeladen!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Upload fehlgeschlagen mit Status: ${response.status}`);
+      }
+
+    } catch (error) {
+      console.error('Fehler beim Hochladen:', error);
+      alert(`Fehler beim Hochladen: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -250,33 +357,40 @@ export default function PhotoEditor({ onMemeCreate }) {
   };
 
   return (
-    <div className="photo-editor" style={{ padding: 12 }}>
+    <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
       <h2>Create Your Meme</h2>
 
       {/* Template Auswahl */}
       <div style={{ marginBottom: 12 }}>
         <h4>Choose a template</h4>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {templateImages.map((t, i) => (
-            <div key={t} style={{ cursor: 'pointer', textAlign: 'center' }}>
+          {templates.map((template) => (
+            <div key={template.id} style={{ cursor: 'pointer', textAlign: 'center' }}>
               <div
-                onClick={() => handleTemplateSelect(t)}
+                onClick={() => handleTemplateSelect(template)}
                 style={{
                   width: 120,
                   height: 80,
                   overflow: 'hidden',
                   borderRadius: 6,
-                  border: selectedTemplate === t ? '3px solid #4f46e5' : '1px solid rgba(0,0,0,0.2)'
+                  border: selectedTemplate?.id === template.id ? '3px solid #4f46e5' : '1px solid rgba(0,0,0,0.2)'
                 }}
               >
                 <img
-                  src={t}
-                  alt={`Template ${i+1}`}
+                  src={template.image}
+                  alt={template.description}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  onError={(e) => (e.target.src = `https://via.placeholder.com/300x200?text=Template+${i+1}`)}
+                  onError={(e) => (e.target.src = `https://via.placeholder.com/300x200?text=Template+${template.id}`)}
                 />
               </div>
-              <div style={{ fontSize: 12, marginTop: 6 }}>Template {i + 1}</div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>{template.description}</div>
             </div>
           ))}
         </div>
@@ -310,7 +424,7 @@ export default function PhotoEditor({ onMemeCreate }) {
               }}
             >
               <img
-                src={selectedTemplate}
+                src={selectedTemplate.image}
                 alt="Selected"
                 style={{ 
                   display: 'block', 
@@ -570,18 +684,18 @@ export default function PhotoEditor({ onMemeCreate }) {
           </button>
           <button 
             onClick={handleCreateMeme} 
-            disabled={!selectedTemplate}
+            disabled={!selectedTemplate || isUploading}
             style={{
               padding: '12px 24px',
               fontSize: '16px',
-              backgroundColor: '#4f46e5',
+              backgroundColor: isUploading ? '#6b7280' : '#4f46e5',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: isUploading ? 'not-allowed' : 'pointer'
             }}
           >
-            Submit Meme
+            {isUploading ? 'Uploading...' : 'Submit Meme'}
           </button>
         </div>
       )}

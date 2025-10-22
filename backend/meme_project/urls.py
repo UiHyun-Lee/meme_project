@@ -26,6 +26,9 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from memes.views import upload_meme
+
+
 
 router = routers.DefaultRouter()
 
@@ -38,6 +41,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path("api/generate_ai_meme/", generate_ai_meme),
+    path("api/upload_meme/", upload_meme, name="upload_meme"),  # Neue Route
     # JWT
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
