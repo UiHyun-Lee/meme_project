@@ -11,7 +11,8 @@ from .services import generate_ai_meme_design, apply_ai_text_to_image
 import cloudinary.api
 import os
 import cloudinary
-
+import random
+from django.db.models import Q
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -143,13 +144,12 @@ class UserMemeUploadView(APIView):
         topic = request.data.get("topic", "")
         template_id = request.data.get("template_id")
 
-        # ✅ 템플릿 확인
         template_id = request.data.get("template_id")
         template = None
 
         if template_id:
             try:
-                # id (숫자) or public_id (문자열) 모두 허용
+                # id or public_id erlaubt
                 if template_id.isdigit():
                     template = MemeTemplate.objects.get(id=int(template_id))
                 else:
@@ -159,27 +159,27 @@ class UserMemeUploadView(APIView):
         else:
             template = MemeTemplate.objects.first()
 
-        # ✅ topic 기본값 처리
+        #  topic default
         if not topic and template:
             topic = template.category.name
 
-        # ✅ Cloudinary 업로드
+        # Cloudinary upload
         upload_result = cloudinary.uploader.upload(
             file_obj,
             folder="memes/human/",
             resource_type="image"
         )
 
-        # ✅ format 처리 (프론트에서 넘어오거나, 템플릿 설명 사용)
+        #  format
         format_value = request.data.get("format") or (template.description if template else "macro")
 
-        # ✅ Meme 생성
+        #  Meme generated
         meme = Meme.objects.create(
             template=template,
             image=upload_result["secure_url"],
             caption=caption,
             created_by="human",
-            format=format_value,  # ✅ 여기가 핵심 수정
+            format=format_value,  #
             topic=topic,
         )
 
@@ -206,3 +206,41 @@ def list_cloudinary_templates(request):
         return Response({"templates": images})
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+
+
+
+@api_view(["GET"])
+def random_memes(request):
+    # human 과 ai 각 1개씩 랜덤 선택
+    human_memes = list(Meme.objects.filter(created_by="human"))
+    ai_memes = list(Meme.objects.filter(created_by="ai"))
+
+    # 하나라도 비어 있으면 에러 반환
+    if not human_memes or not ai_memes:
+        return Response({"error": "Not enough memes"}, status=400)
+
+    import random
+    selected_human = random.choice(human_memes)
+    selected_ai = random.choice(ai_memes)
+
+    serializer = MemeSerializer([selected_human, selected_ai], many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+def vote_meme(request):
+    meme_id = request.data.get("meme_id")
+    if not meme_id:
+        return Response({"error": "meme_id required"}, status=400)
+
+    print(f" Meme {meme_id} voted!")  # for debuging
+    # TODO: Vote model??
+    return Response({"success": True})
+
+
+@api_view(["POST"])
+def report_meme(request):
+    meme_id = request.data.get("meme_id")
+    print(f"meme {meme_id} reported!")
+    return Response({"success": True})
