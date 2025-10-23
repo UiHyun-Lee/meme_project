@@ -212,11 +212,9 @@ def list_cloudinary_templates(request):
 
 @api_view(["GET"])
 def random_memes(request):
-    # human 과 ai 각 1개씩 랜덤 선택
     human_memes = list(Meme.objects.filter(created_by="human"))
     ai_memes = list(Meme.objects.filter(created_by="ai"))
 
-    # 하나라도 비어 있으면 에러 반환
     if not human_memes or not ai_memes:
         return Response({"error": "Not enough memes"}, status=400)
 

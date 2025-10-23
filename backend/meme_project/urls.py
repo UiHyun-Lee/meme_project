@@ -33,7 +33,7 @@ router = routers.DefaultRouter()
 router.register(r'categories', CategoryViewSet)
 router.register(r'templates', MemeTemplateViewSet)
 router.register(r'memes', MemeViewSet)
-router.register(r'evaluations', EvaluationViewSet, basename='evaluation')
+router.register(r'evaluations', EvaluationViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

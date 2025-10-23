@@ -25,6 +25,10 @@ class Meme(models.Model):
     format = models.CharField(max_length=50)
     topic = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    humor_avg = models.FloatField(default=0)
+    creativity_avg = models.FloatField(default=0)
+    cultural_avg = models.FloatField(default=0)
+    total_votes = models.IntegerField(default=0)
 
     def __str__(self):
         return f"Meme {self.id} from {self.template.category.name}"
