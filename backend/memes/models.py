@@ -26,8 +26,6 @@ class Meme(models.Model):
     topic = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     humor_avg = models.FloatField(default=0)
-    creativity_avg = models.FloatField(default=0)
-    cultural_avg = models.FloatField(default=0)
     total_votes = models.IntegerField(default=0)
 
     def __str__(self):

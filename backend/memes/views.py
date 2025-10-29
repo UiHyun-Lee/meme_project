@@ -230,8 +230,6 @@ def random_memes(request):
 def vote_meme(request):
     meme_id = request.data.get("meme_id")
     humor = request.data.get("humor_score", 5)
-    creativity = request.data.get("creativity_score", 5)
-    cultural = request.data.get("cultural_score", 5)
     user_id = request.data.get("user_id", "anonymous")
 
     if not meme_id:
@@ -245,8 +243,6 @@ def vote_meme(request):
     evaluation = Evaluation.objects.create(
         meme=meme,
         humor_score=humor,
-        creativity_score=creativity,
-        cultural_score=cultural,
         user_id=user_id
     )
 
@@ -258,7 +254,7 @@ def vote_meme(request):
     meme.total_votes = total_votes
     meme.save(update_fields=["humor_avg", "creativity_avg", "cultural_avg", "total_votes"])
 
-    print(f"✅ Meme {meme_id} voted with {humor}/{creativity}/{cultural}")
+    print(f" Meme {meme_id} voted with {humor}")
 
     return Response({
         "success": True,
@@ -266,8 +262,6 @@ def vote_meme(request):
         "total_votes": total_votes,
         "avg_scores": {
             "humor": meme.humor_avg,
-            "creativity": meme.creativity_avg,
-            "cultural": meme.cultural_avg,
         },
     })
 

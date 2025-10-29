@@ -37,15 +37,11 @@ class EvaluationViewSet(viewsets.ModelViewSet):
         all_evals = Evaluation.objects.filter(meme=meme)
         total_votes = all_evals.count()
         avg_humor = sum(e.humor_score for e in all_evals) / total_votes
-        avg_creativity = sum(e.creativity_score for e in all_evals) / total_votes
-        avg_cultural = sum(e.cultural_score for e in all_evals) / total_votes
 
         #  Meme field update
         meme.humor_avg = avg_humor
-        meme.creativity_avg = avg_creativity
-        meme.cultural_avg = avg_cultural
         meme.total_votes = total_votes
-        meme.save(update_fields=["humor_avg", "creativity_avg", "cultural_avg", "total_votes"])
+        meme.save(update_fields=["humor_avg", "total_votes"])
 
         return Response(
             {
@@ -55,8 +51,6 @@ class EvaluationViewSet(viewsets.ModelViewSet):
                 "total_votes": total_votes,
                 "avg_scores": {
                     "humor": avg_humor,
-                    "creativity": avg_creativity,
-                    "cultural": avg_cultural,
                 },
             },
             status=status.HTTP_201_CREATED,
