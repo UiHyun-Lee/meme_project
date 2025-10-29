@@ -16,12 +16,10 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
-from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet, generate_ai_meme, import_cloudinary_data, \
-    UserMemeUploadView, list_cloudinary_templates,report_meme,random_memes,vote_meme
+    UserMemeUploadView, list_cloudinary_templates,report_meme,random_memes,vote_meme,leaderboard
 from evaluations.views import EvaluationViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -47,7 +45,7 @@ urlpatterns = [
     path('api/memes/random/', random_memes),
     path('api/memes/vote/', vote_meme),
     path('api/memes/report/', report_meme),
-
+    path('api/leaderboard/', leaderboard),
     path('api/', include(router.urls)),
     # JWT
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),

@@ -5,14 +5,14 @@ from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+# from evaluations.models import Evaluation
 from .models import Category, MemeTemplate, Meme
 from .serializers import CategorySerializer, MemeTemplateSerializer, MemeSerializer
 from .services import generate_ai_meme_design, apply_ai_text_to_image
 import cloudinary.api
 import os
 import cloudinary
-import random
-from django.db.models import Q
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -229,16 +229,65 @@ def random_memes(request):
 @api_view(["POST"])
 def vote_meme(request):
     meme_id = request.data.get("meme_id")
+    humor = request.data.get("humor_score", 5)
+    creativity = request.data.get("creativity_score", 5)
+    cultural = request.data.get("cultural_score", 5)
+    user_id = request.data.get("user_id", "anonymous")
+
     if not meme_id:
         return Response({"error": "meme_id required"}, status=400)
 
-    print(f" Meme {meme_id} voted!")  # for debuging
-    # TODO: Vote model??
-    return Response({"success": True})
+    try:
+        meme = Meme.objects.get(id=meme_id)
+    except Meme.DoesNotExist:
+        return Response({"error": "Meme not found"}, status=404)
+
+    evaluation = Evaluation.objects.create(
+        meme=meme,
+        humor_score=humor,
+        creativity_score=creativity,
+        cultural_score=cultural,
+        user_id=user_id
+    )
+
+    all_evals = meme.evaluations.all()
+    total_votes = all_evals.count()
+    meme.humor_avg = sum(e.humor_score for e in all_evals) / total_votes
+    meme.creativity_avg = sum(e.creativity_score for e in all_evals) / total_votes
+    meme.cultural_avg = sum(e.cultural_score for e in all_evals) / total_votes
+    meme.total_votes = total_votes
+    meme.save(update_fields=["humor_avg", "creativity_avg", "cultural_avg", "total_votes"])
+
+    print(f"✅ Meme {meme_id} voted with {humor}/{creativity}/{cultural}")
+
+    return Response({
+        "success": True,
+        "meme_id": meme.id,
+        "total_votes": total_votes,
+        "avg_scores": {
+            "humor": meme.humor_avg,
+            "creativity": meme.creativity_avg,
+            "cultural": meme.cultural_avg,
+        },
+    })
+
 
 
 @api_view(["POST"])
 def report_meme(request):
     meme_id = request.data.get("meme_id")
     print(f"meme {meme_id} reported!")
+
     return Response({"success": True})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def leaderboard(request):
+    """
+    Returns top memes sorted by total_votes
+    """
+    memes = Meme.objects.all().order_by("-total_votes")[:10]
+    serializer = MemeSerializer(memes, many=True)
+
+    return Response(serializer.data)

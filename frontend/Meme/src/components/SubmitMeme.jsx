@@ -15,7 +15,7 @@ const SubmitMeme = () => {
       const container = document.getElementById('imgContainer')
       if (!container) return alert('Meme container not found!')
 
-      // 이미지 로드 대기
+
       const imgs = container.getElementsByTagName('img')
       await Promise.all(Array.from(imgs).map(img => {
         if (!img.complete) return new Promise(res => { img.onload = res; img.onerror = res })
@@ -54,16 +54,151 @@ const SubmitMeme = () => {
   }
 
   return (
-    <div className="submit-container" style={{ color: 'white' }}>
-      <h2>Submit Your Meme</h2>
-      <PhotoEditor onMemeCreate={handleMemeCreate} onTemplateSelect={setSelectedTemplate} />
-      {uploading && <p>Uploading... please wait ⏳</p>}
-      {uploadedUrl && (
-        <div style={{ marginTop: 20 }}>
-          <h4>Uploaded Successfully 🎉</h4>
-          <img src={uploadedUrl} alt="Uploaded Meme" style={{ width: 300, borderRadius: 8 }} />
+    <div style={{
+        textAlign: 'center',
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+    }}>
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
+        <h2 style={{
+          fontSize: '2.5rem',
+          marginBottom: '10px',
+          textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+        }}>
+          Submit Your Meme
+        </h2>
+        <p style={{ fontSize: '1.2rem', marginBottom: '8px', opacity: 0.9 }}>
+          Create a Meme. Challenge the Machines.
+        </p>
+        <p style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>
+          Use our photo editor to create your meme and join the competition!
+        </p>
+        <div className="submit-container">
+          <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
+            This week's topic: <strong style={{ color: '#ffeb3b' }}>School</strong>
+          </p>
         </div>
-      )}
+      </div>
+
+      <PhotoEditor onMemeCreate={handleMemeCreate} onTemplateSelect={setSelectedTemplate} />
+
+
+{/* 📦 Upload status & recent result section */}
+{uploading && (
+  <div style={{
+    marginTop: '40px',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    textAlign: 'center'
+  }}>
+    <h3 style={{
+      color: '#4f46e5',
+      fontWeight: 'bold',
+      fontSize: '1.2rem',
+      marginBottom: '10px'
+    }}>
+      Uploading... please wait ⏳
+    </h3>
+    <p style={{ color: '#666' }}>Your meme is being processed and uploaded.</p>
+  </div>
+)}
+
+{uploadedUrl && (
+  <div style={{
+    marginTop: '40px',
+    padding: '20px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+  }}>
+    <h3 style={{
+      textAlign: 'center',
+      marginBottom: '20px',
+      color: '#333',
+      borderBottom: '2px solid #4f46e5',
+      paddingBottom: '10px'
+    }}>
+      Uploaded Successfully 🎉
+    </h3>
+
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'column',
+      gap: '10px'
+    }}>
+      <img
+        src={uploadedUrl}
+        alt="Uploaded Meme"
+        style={{
+          width: '300px',
+          height: 'auto',
+          borderRadius: '8px',
+          objectFit: 'cover',
+          marginBottom: '10px'
+        }}
+      />
+      <p style={{
+        fontSize: '0.95rem',
+        color: '#555',
+        margin: 0
+      }}>
+        Meme uploaded successfully to the server.
+      </p>
+      <small style={{ color: '#999' }}>
+        {new Date().toLocaleString()}
+      </small>
+    </div>
+  </div>
+)}
+
+    {/* Instructions Section */}
+      <div style={{
+        textAlign: 'left',
+        marginBottom: '30px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white'
+      }}>
+  <h4 style={{ color: '#1a1a1a', marginBottom: '15px' }}>How to create your meme:</h4>
+  <ol style={{
+    color: '#0d1b2a',
+    lineHeight: '1.8',
+    paddingLeft: '22px',
+    fontSize: '1.05rem',
+    fontWeight: 500
+  }}>
+    <li>Choose a template from the selection above</li>
+    <li>Add text elements and customize their style</li>
+    <li>Drag text elements to position them perfectly</li>
+    <li>Double-click text to edit, right-click to delete</li>
+    <li>Download your meme or submit it to the database</li>
+  </ol>
+  <p style={{
+    color: '#ff8c00',  // kräftigeres, dunkles Blau
+    fontWeight: 'bold',
+    marginTop: '20px',
+    fontStyle: 'italic',
+    fontSize: '1.05rem',
+    textShadow: '0 1px 2px rgba(255, 255, 255, 0.6)'
+  }}>
+    Your submitted memes will be visible to other users and can be rated in the competition!
+  </p>
+  </div>
     </div>
   )
 }
