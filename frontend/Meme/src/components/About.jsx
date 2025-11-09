@@ -19,6 +19,29 @@ const About = () => {
       <p>
         Whether you're a meme connoisseur, an AI enthusiast, or just here for the laughs, you're part of the experiment. Let the meme battle begin.
       </p>
+
+      {/* Footer */}
+      <footer
+        style={{
+          marginTop: "40px",
+          padding: "20px",
+          textAlign: "center"
+        }}
+      >
+        <button
+          onClick={() => (window.location.href = '/impressum')}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "8px",
+            border: "none",
+            fontWeight: "bold",
+            backgroundColor: "#ffd700",
+            cursor: "pointer"
+          }}
+        >
+          Impressum
+        </button>
+      </footer>
     </div>
   )
 }

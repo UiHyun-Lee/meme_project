@@ -163,7 +163,30 @@ const Leaderboard = () => {
           </div>
         </div>
       )}
+      {/* Footer */}
+      <footer
+        style={{
+          marginTop: "40px",
+          padding: "20px",
+          textAlign: "center"
+        }}
+      >
+        <button
+          onClick={() => (window.location.href = '/impressum')}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "8px",
+            border: "none",
+            fontWeight: "bold",
+            backgroundColor: "#ffd700",
+            cursor: "pointer"
+          }}
+        >
+          Impressum
+        </button>
+      </footer>
     </div>
+    
   )
 }
 

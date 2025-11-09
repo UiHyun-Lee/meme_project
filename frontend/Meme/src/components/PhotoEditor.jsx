@@ -21,6 +21,10 @@ export default function PhotoEditor({ onMemeCreate }) {
   const previewRef = useRef(null);
   const textInputRef = useRef(null);
 
+  // Double tap detection
+  const [lastTap, setLastTap] = useState(0);
+  const [tapTimeout, setTapTimeout] = useState(null);
+
   const fontOptions = [
     'Arial', 'Impact', 'Verdana', 'Times New Roman', 'Georgia', 
     'Helvetica', 'Courier New', 'Comic Sans MS'
@@ -124,48 +128,139 @@ export default function PhotoEditor({ onMemeCreate }) {
     }, 100);
   };
 
-  // Korrigierte Drag & Drop Funktion
+  // Double tap handler for mobile
+  const handleTextDoubleTap = (el) => {
+    if (window.confirm('Text löschen?')) {
+      setTextElements(prev => prev.filter(x => x.id !== el.id));
+      if (currentText?.id === el.id) {
+        setCurrentText(null);
+        setTextInput('');
+      }
+    }
+  };
+
+  // Unified tap handler for mobile
+  const handleTextTap = (el) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapTimeout) {
+      clearTimeout(tapTimeout);
+      setTapTimeout(null);
+    }
+    
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected - delete text
+      handleTextDoubleTap(el);
+    } else {
+      // Single tap - select text
+      setLastTap(currentTime);
+      setTapTimeout(setTimeout(() => {
+        // Single tap action (select text)
+        setCurrentText(el);
+        setTextColor(el.color);
+        setFontSize(el.fontSize);
+        setFontFamily(el.fontFamily);
+        setIsBold(el.fontWeight === 'bold');
+        setIsItalic(el.fontStyle === 'italic');
+        setIsUnderline(el.textDecoration === 'underline');
+        setHasShadow(!!el.textShadow);
+        setTapTimeout(null);
+      }, 300));
+    }
+  };
+
+  // Unified drag function for both mouse and touch
+  const updateTextPosition = (clientX, clientY) => {
+    if (!isDragging || !currentText) return;
+
+    const container = imgContainerRef.current;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const x = clientX - containerRect.left;
+    const y = clientY - containerRect.top;
+
+    // Boundary checks to keep text within container
+    const boundedX = Math.max(10, Math.min(x, containerRect.width - 10));
+    const boundedY = Math.max(10, Math.min(y, containerRect.height - 10));
+
+    // Update position in state
+    setTextElements(prev => 
+      prev.map(el => 
+        el.id === currentText.id 
+          ? { ...el, position: { x: boundedX, y: boundedY } } 
+          : el
+      )
+    );
+  };
+
+  // Mouse event handlers
+  const handleTextMouseDown = (e, el) => {
+    e.preventDefault();
+    setCurrentText(el);
+    setIsDragging(true);
+  };
+
+  // Touch event handlers for mobile
+  const handleTextTouchStart = (e, el) => {
+    e.preventDefault();
+    setCurrentText(el);
+    setIsDragging(true);
+    
+    // Update position immediately on touch start
+    const touch = e.touches[0];
+    updateTextPosition(touch.clientX, touch.clientY);
+  };
+
+  const handleTextTouchMove = (e) => {
+    if (!isDragging || !currentText) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    updateTextPosition(touch.clientX, touch.clientY);
+  };
+
+  const handleTextTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Global event handlers for dragging
   useEffect(() => {
     const handleMouseMove = (e) => {
+      updateTextPosition(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e) => {
       if (!isDragging || !currentText) return;
-
-      const container = imgContainerRef.current;
-      if (!container) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const x = e.clientX - containerRect.left;
-      const y = e.clientY - containerRect.top;
-
-      // Update position in state
-      setTextElements(prev => 
-        prev.map(el => 
-          el.id === currentText.id 
-            ? { ...el, position: { x, y } } 
-            : el
-        )
-      );
+      e.preventDefault();
+      const touch = e.touches[0];
+      updateTextPosition(touch.clientX, touch.clientY);
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
     };
 
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+
     if (isDragging) {
+      // Add both mouse and touch events
       document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchend', handleTouchEnd);
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging, currentText]);
-
-  const handleTextMouseDown = (e, el) => {
-    e.preventDefault();
-    setCurrentText(el);
-    setIsDragging(true);
-  };
 
   const handleTextContextMenu = (e, el) => {
     e.preventDefault();
@@ -191,6 +286,14 @@ export default function PhotoEditor({ onMemeCreate }) {
 
   const handleImageClick = (e) => {
     // Nur deselecten wenn auf das Bild selbst geklickt wird, nicht auf Text
+    if (e.target === imgContainerRef.current || e.target.tagName === 'IMG') {
+      setCurrentText(null);
+      setTextInput('');
+    }
+  };
+
+  const handleImageTouchStart = (e) => {
+    // Deselect text when touching the image background
     if (e.target === imgContainerRef.current || e.target.tagName === 'IMG') {
       setCurrentText(null);
       setTextInput('');
@@ -396,136 +499,54 @@ export default function PhotoEditor({ onMemeCreate }) {
         </div>
       </div>
 
-      {/* Preview & Controls nebeneinander */}
+      {/* Controls Section */}
       {selectedTemplate && (
-        <div ref={previewRef} style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', marginTop: 20 }}>
-          {/* Preview Container mit ursprünglicher Breite und Zentrierung */}
-          <div style={{ 
-            flex: '2 1 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
-          }}>
-            <h4>Preview</h4>
-            <div
-              ref={imgContainerRef}
-              id="imgContainer"
-              onClick={handleImageClick}
-              style={{ 
-                position: 'relative', 
-                display: 'inline-block', 
-                padding: 8, 
-                background: '#fff', 
-                borderRadius: 8,
-                minHeight: '400px',
-                height: '400px',
-                overflow: 'hidden',
-                cursor: 'pointer'
+        <div style={{ 
+          background: 'rgba(0,0,0,0.05)', 
+          padding: 16, 
+          borderRadius: 8,
+          marginBottom: '20px'
+        }}>
+          <h4>Text Options</h4>
+          
+          {/* Text Input - Button wechselt zwischen Add Text und Update Text */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+              Text:
+            </label>
+            <input
+              ref={textInputRef}
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Enter your text..."
+              style={{
+                width: '100%',
+                maxWidth: '400px',
+                padding: '6px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                fontSize: '14px'
               }}
-            >
-              <img
-                src={selectedTemplate.image}
-                alt="Selected"
+            />
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', justifyContent: 'center' }}>
+              <button 
+                onClick={handleButtonClick}
+                disabled={!selectedTemplate}
                 style={{ 
-                  display: 'block', 
-                  maxWidth: '100%', 
-                  maxHeight: '100%', 
-                  height: '100%',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  borderRadius: 6 
+                  padding: '6px 12px',
+                  fontSize: '12px'
                 }}
-              />
-
-              {textElements.map(el => (
-                <div
-                  key={el.id}
-                  data-id={el.id}
-                  className="meme-text"
-                  onContextMenu={(e) => handleTextContextMenu(e, el)}
-                  onClick={() => handleTextClick(el)}
-                  onDoubleClick={() => handleTextDoubleClick(el)}
-                  onMouseDown={(e) => handleTextMouseDown(e, el)}
-                  style={{
-                    position: 'absolute',
-                    left: (el.position?.x ?? 50) + 'px',
-                    top: (el.position?.y ?? 50) + 'px',
-                    color: el.color,
-                    fontSize: el.fontSize + 'px',
-                    fontFamily: el.fontFamily,
-                    fontWeight: el.fontWeight,
-                    fontStyle: el.fontStyle,
-                    textDecoration: el.textDecoration,
-                    textShadow: el.textShadow,
-                    cursor: isDragging && currentText?.id === el.id ? 'grabbing' : 'grab',
-                    userSelect: 'none',
-                    padding: '4px 8px',
-                    border: currentText?.id === el.id ? '2px dashed #4f46e5' : 'none',
-                    backgroundColor: currentText?.id === el.id ? 'rgba(79,70,229,0.1)' : 'transparent',
-                    minWidth: '20px',
-                    minHeight: '20px',
-                    zIndex: 1000
-                  }}
-                >
-                  {el.text}
-                </div>
-              ))}
+              >
+                {currentText ? 'Update Text' : 'Add Text'}
+              </button>
             </div>
-            <p style={{ fontSize: '0.9em', color: '#666', marginTop: 8 }}>
-              Drag to move • Click to select • Double-click to edit • Right-click to delete
-            </p>
           </div>
 
-          {/* Controls rechts daneben mit fester Höhe */}
-          <div style={{ 
-            flex: '1 1 300px', 
-            background: 'rgba(0,0,0,0.05)', 
-            padding: 16, 
-            borderRadius: 8,
-            minHeight: '400px',
-            height: '400px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <h4>Text Options</h4>
-            
-            {/* Text Input - Button wechselt zwischen Add Text und Update Text */}
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
-                Text:
-              </label>
-              <input
-                ref={textInputRef}
-                type="text"
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your text..."
-                style={{
-                  width: '100%',
-                  padding: '6px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  fontSize: '14px'
-                }}
-              />
-              <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                <button 
-                  onClick={handleButtonClick}
-                  disabled={!selectedTemplate}
-                  style={{ 
-                    width: '100%', 
-                    padding: '6px 8px',
-                    fontSize: '12px'
-                  }}
-                >
-                  {currentText ? 'Update Text' : 'Add Text'}
-                </button>
-              </div>
-            </div>
-
-            {/* Style Controls */}
-            <div style={{ marginBottom: 10 }}>
+          {/* Style Controls */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+            <div>
               <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
                 Text Color:
               </label>
@@ -541,7 +562,7 @@ export default function PhotoEditor({ onMemeCreate }) {
               />
             </div>
 
-            <div style={{ marginBottom: 10 }}>
+            <div>
               <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
                 Font Size: {fontSize}px
               </label>
@@ -560,7 +581,7 @@ export default function PhotoEditor({ onMemeCreate }) {
               />
             </div>
 
-            <div style={{ marginBottom: 10 }}>
+            <div>
               <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
                 Font Family:
               </label>
@@ -576,83 +597,173 @@ export default function PhotoEditor({ onMemeCreate }) {
                 {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
+          </div>
 
-            <div style={{ marginBottom: 12, flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
-                Text Effects:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                <button 
-                  onClick={() => { 
-                    setIsBold(!isBold); 
-                    updateCurrentTextStyle('fontWeight', !isBold ? 'bold' : 'normal'); 
-                  }} 
-                  disabled={!currentText}
-                  style={{ 
-                    padding: '6px 8px',
-                    fontSize: '12px',
-                    backgroundColor: isBold ? '#4f46e5' : '#f3f4f6',
-                    color: isBold ? 'white' : 'black',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Bold
-                </button>
-                <button 
-                  onClick={() => { 
-                    setIsItalic(!isItalic); 
-                    updateCurrentTextStyle('fontStyle', !isItalic ? 'italic' : 'normal'); 
-                  }} 
-                  disabled={!currentText}
-                  style={{ 
-                    padding: '6px 8px',
-                    fontSize: '12px',
-                    backgroundColor: isItalic ? '#4f46e5' : '#f3f4f6',
-                    color: isItalic ? 'white' : 'black',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Italic
-                </button>
-                <button 
-                  onClick={() => { 
-                    setIsUnderline(!isUnderline); 
-                    updateCurrentTextStyle('textDecoration', !isUnderline ? 'underline' : 'none'); 
-                  }} 
-                  disabled={!currentText}
-                  style={{ 
-                    padding: '6px 8px',
-                    fontSize: '12px',
-                    backgroundColor: isUnderline ? '#4f46e5' : '#f3f4f6',
-                    color: isUnderline ? 'white' : 'black',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Underline
-                </button>
-                <button 
-                  onClick={() => { 
-                    setHasShadow(!hasShadow); 
-                    updateCurrentTextStyle('textShadow', !hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : ''); 
-                  }} 
-                  disabled={!currentText}
-                  style={{ 
-                    padding: '6px 8px',
-                    fontSize: '12px',
-                    backgroundColor: hasShadow ? '#4f46e5' : '#f3f4f6',
-                    color: hasShadow ? 'white' : 'black',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px'
-                  }}
-                >
-                  Shadow
-                </button>
-              </div>
+          <div style={{ marginBottom: 12, marginTop: '10px' }}>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold', fontSize: '14px' }}>
+              Text Effects:
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '6px', maxWidth: '400px', margin: '0 auto' }}>
+              <button 
+                onClick={() => { 
+                  setIsBold(!isBold); 
+                  updateCurrentTextStyle('fontWeight', !isBold ? 'bold' : 'normal'); 
+                }} 
+                disabled={!currentText}
+                style={{ 
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  backgroundColor: isBold ? '#4f46e5' : '#f3f4f6',
+                  color: isBold ? 'white' : 'black',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px'
+                }}
+              >
+                Bold
+              </button>
+              <button 
+                onClick={() => { 
+                  setIsItalic(!isItalic); 
+                  updateCurrentTextStyle('fontStyle', !isItalic ? 'italic' : 'normal'); 
+                }} 
+                disabled={!currentText}
+                style={{ 
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  backgroundColor: isItalic ? '#4f46e5' : '#f3f4f6',
+                  color: isItalic ? 'white' : 'black',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px'
+                }}
+              >
+                Italic
+              </button>
+              <button 
+                onClick={() => { 
+                  setIsUnderline(!isUnderline); 
+                  updateCurrentTextStyle('textDecoration', !isUnderline ? 'underline' : 'none'); 
+                }} 
+                disabled={!currentText}
+                style={{ 
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  backgroundColor: isUnderline ? '#4f46e5' : '#f3f4f6',
+                  color: isUnderline ? 'white' : 'black',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px'
+                }}
+              >
+                Underline
+              </button>
+              <button 
+                onClick={() => { 
+                  setHasShadow(!hasShadow); 
+                  updateCurrentTextStyle('textShadow', !hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : ''); 
+                }} 
+                disabled={!currentText}
+                style={{ 
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  backgroundColor: hasShadow ? '#4f46e5' : '#f3f4f6',
+                  color: hasShadow ? 'white' : 'black',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px'
+                }}
+              >
+                Outline
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Preview Section - Now below the controls */}
+      {selectedTemplate && (
+        <div ref={previewRef} style={{ marginTop: 20 }}>
+          <h4>Preview</h4>
+          <div
+            ref={imgContainerRef}
+            id="imgContainer"
+            onClick={handleImageClick}
+            onTouchStart={handleImageTouchStart}
+            style={{ 
+              position: 'relative', 
+              display: 'inline-block', 
+              padding: 8, 
+              background: '#fff', 
+              borderRadius: 8,
+              minHeight: '400px',
+              height: '400px',
+              overflow: 'hidden',
+              cursor: 'pointer',
+              touchAction: 'none' // Important for touch scrolling prevention
+            }}
+          >
+            <img
+              src={selectedTemplate.image}
+              alt="Selected"
+              style={{ 
+                display: 'block', 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                height: '100%',
+                width: 'auto',
+                objectFit: 'contain',
+                borderRadius: 6 
+              }}
+            />
+
+            {textElements.map(el => (
+              <div
+                key={el.id}
+                data-id={el.id}
+                className="meme-text"
+                onContextMenu={(e) => handleTextContextMenu(e, el)}
+                onClick={() => handleTextClick(el)}
+                onDoubleClick={() => handleTextDoubleClick(el)}
+                onMouseDown={(e) => handleTextMouseDown(e, el)}
+                onTouchStart={(e) => handleTextTouchStart(e, el)}
+                onTouchMove={handleTextTouchMove}
+                onTouchEnd={handleTextTouchEnd}
+                onTouchStartCapture={(e) => {
+                  // Use touch start for double tap detection
+                  e.preventDefault();
+                  handleTextTap(el);
+                }}
+                style={{
+                  position: 'absolute',
+                  left: (el.position?.x ?? 50) + 'px',
+                  top: (el.position?.y ?? 50) + 'px',
+                  color: el.color,
+                  fontSize: el.fontSize + 'px',
+                  fontFamily: el.fontFamily,
+                  fontWeight: el.fontWeight,
+                  fontStyle: el.fontStyle,
+                  textDecoration: el.textDecoration,
+                  textShadow: el.textShadow,
+                  cursor: isDragging && currentText?.id === el.id ? 'grabbing' : 'grab',
+                  userSelect: 'none',
+                  padding: '4px 8px',
+                  border: currentText?.id === el.id ? '2px dashed #4f46e5' : 'none',
+                  backgroundColor: currentText?.id === el.id ? 'rgba(79,70,229,0.1)' : 'transparent',
+                  minWidth: '20px',
+                  minHeight: '20px',
+                  zIndex: 1000,
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                  touchAction: 'none'
+                }}
+              >
+                {el.text}
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.9em', color: '#FFF', marginTop: 8 }}>
+            {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+              ? 'Touch & drag to move • Tap to select • Double-tap to delete'
+              : 'Drag to move • Click to select • Double-click to edit • Right-click to delete'
+            }
+          </p>
         </div>
       )}
 
@@ -665,7 +776,8 @@ export default function PhotoEditor({ onMemeCreate }) {
           borderTop: '2px solid #e5e7eb',
           display: 'flex',
           justifyContent: 'center',
-          gap: '20px'
+          gap: '20px',
+          flexWrap: 'wrap'
         }}>
           <button 
             onClick={handleDownloadMeme} 
@@ -677,7 +789,8 @@ export default function PhotoEditor({ onMemeCreate }) {
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              minWidth: '140px'
             }}
           >
             Download Meme
@@ -692,7 +805,8 @@ export default function PhotoEditor({ onMemeCreate }) {
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              cursor: isUploading ? 'not-allowed' : 'pointer'
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              minWidth: '140px'
             }}
           >
             {isUploading ? 'Uploading...' : 'Submit Meme'}
