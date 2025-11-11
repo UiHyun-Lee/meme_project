@@ -692,6 +692,7 @@ body {
   border-radius: 8px;
 }
 
+/* WICHTIG: Meme Text Styles - Border nur im Edit-Modus */
 .meme-text {
   position: absolute;
   font-weight: bold;
@@ -707,11 +708,19 @@ body {
   white-space: nowrap;
   transition: transform 0.2s;
   cursor: move;
+  /* KEINE Border oder Background standardmäßig */
+  border: none !important;
+  background-color: transparent !important;
+}
+
+.meme-text.editing {
+  /* Nur wenn aktiv bearbeitet wird */
+  border: 2px dashed #4f46e5 !important;
+  background-color: rgba(79,70,229,0.1) !important;
 }
 
 .meme-text:hover {
   transform: scale(1.05);
-  background-color: rgba(0, 0, 0, 0.3);
 }
 
 .text-controls {
@@ -1202,5 +1211,5 @@ button:hover {
   background: rgba(255, 0, 0, 0.8);
   border: none;
   border-radius: 50%;
-  padding: 6px
+  padding: 6px;
 }

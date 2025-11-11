@@ -22,9 +22,7 @@ const Voting = () => {
 
   return (
     <div className="voting-container">
-      <p className="topic-text">
-        This week's topic: <strong>School</strong>
-      </p>
+      
 
       <div className="meme-comparison">
 
@@ -53,10 +51,10 @@ const Voting = () => {
           </div>
         </div>
 
-        <div className="vs-text">VS</div>
+        <div className="vs-text" style={{ marginTop: '-40px' }}>VS</div>
 
         {/* Meme B */}
-        <div className={`meme-card ${selectedMeme === 'B' ? 'selected' : ''}`}>
+        <div className={`meme-card ${selectedMeme === 'B' ? 'selected' : ''}`} style={{ marginTop: '-40px' }}>
           <div className="meme-image-container" onClick={() => handleVote('B')}>
             <img
               src="frontend/Meme/public/meme2.jpg"
@@ -87,6 +85,10 @@ const Voting = () => {
           <p>Thank you for your vote! 🎉</p>
         </div>
       )}
+
+      <p className="topic-text">
+        This week's topic: <strong>School</strong>
+      </p>
 
       {/* Footer */}
       <footer

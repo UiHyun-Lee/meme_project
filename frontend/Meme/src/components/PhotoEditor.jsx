@@ -311,30 +311,11 @@ export default function PhotoEditor({ onMemeCreate }) {
     if (!imgContainerRef.current) return;
 
     try {
-      // Temporär alle Text-Elemente ohne Border und Hintergrund für den Download
-      const textElements = imgContainerRef.current.querySelectorAll('.meme-text');
-      const originalStyles = [];
-      
-      textElements.forEach((el, index) => {
-        originalStyles[index] = {
-          border: el.style.border,
-          backgroundColor: el.style.backgroundColor
-        };
-        el.style.border = 'none';
-        el.style.backgroundColor = 'transparent';
-      });
-
       const canvas = await html2canvas(imgContainerRef.current, { 
         backgroundColor: null, 
         scale: 2, 
         useCORS: true,
         allowTaint: true
-      });
-
-      // Original-Stile wiederherstellen
-      textElements.forEach((el, index) => {
-        el.style.border = originalStyles[index].border;
-        el.style.backgroundColor = originalStyles[index].backgroundColor;
       });
 
       const data = canvas.toDataURL('image/jpeg', 0.9);
@@ -359,20 +340,7 @@ export default function PhotoEditor({ onMemeCreate }) {
     setIsUploading(true);
 
     try {
-      // Meme als Bild generieren
-      const textElements = imgContainerRef.current.querySelectorAll('.meme-text');
-      const originalStyles = [];
-      
-      // Temporär Stile für Screenshot anpassen
-      textElements.forEach((el, index) => {
-        originalStyles[index] = {
-          border: el.style.border,
-          backgroundColor: el.style.backgroundColor
-        };
-        el.style.border = 'none';
-        el.style.backgroundColor = 'transparent';
-      });
-
+      // Meme als Bild generieren - KEINE Style-Anpassungen mehr nötig dank CSS-Klasse
       const canvas = await html2canvas(imgContainerRef.current, { 
         backgroundColor: null, 
         scale: 2, 
@@ -380,18 +348,13 @@ export default function PhotoEditor({ onMemeCreate }) {
         allowTaint: true
       });
 
-      // Original-Stile wiederherstellen
-      textElements.forEach((el, index) => {
-        el.style.border = originalStyles[index].border;
-        el.style.backgroundColor = originalStyles[index].backgroundColor;
-      });
-
       // Canvas zu Base64 konvertieren
       const imageData = canvas.toDataURL('image/jpeg', 0.9);
       
       // Caption aus Text-Elementen erstellen
+      const textElements = imgContainerRef.current.querySelectorAll('.meme-text');
       const caption = textElements.length > 0 
-        ? textElements.map(el => el.textContent).join(' | ')
+        ? Array.from(textElements).map(el => el.textContent).join(' | ')
         : 'Custom Meme';
       
       // Meme-Daten für Upload vorbereiten
@@ -717,7 +680,7 @@ export default function PhotoEditor({ onMemeCreate }) {
               <div
                 key={el.id}
                 data-id={el.id}
-                className="meme-text"
+                className={`meme-text ${currentText?.id === el.id ? 'editing' : ''}`}
                 onContextMenu={(e) => handleTextContextMenu(e, el)}
                 onClick={() => handleTextClick(el)}
                 onDoubleClick={() => handleTextDoubleClick(el)}
@@ -744,8 +707,7 @@ export default function PhotoEditor({ onMemeCreate }) {
                   cursor: isDragging && currentText?.id === el.id ? 'grabbing' : 'grab',
                   userSelect: 'none',
                   padding: '4px 8px',
-                  border: currentText?.id === el.id ? '2px dashed #4f46e5' : 'none',
-                  backgroundColor: currentText?.id === el.id ? 'rgba(79,70,229,0.1)' : 'transparent',
+                  // Border und Background werden jetzt über CSS-Klasse gesteuert
                   minWidth: '20px',
                   minHeight: '20px',
                   zIndex: 1000,
