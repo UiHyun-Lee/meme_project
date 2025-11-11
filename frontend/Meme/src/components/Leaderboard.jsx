@@ -5,34 +5,34 @@ const Leaderboard = () => {
   const [selectedMeme, setSelectedMeme] = useState(null) // Für vergrößerte Meme-Ansicht
 
   const leaderboardData = [
-    { rank: 1, username: 'MemeMaker260', type: 'Human', score: 1412, avatar: 'frontend/Meme/public/templates/template1.jpg' },
-    { rank: 2, username: 'OpenAI', type: 'AI', score: 1378, avatar: 'frontend/Meme/public/templates/template2.jpg' },
-    { rank: 3, username: 'MemeMaker7', type: 'Human', score: 1110, avatar: 'frontend/Meme/public/templates/template3.jpg' },
-    { rank: 4, username: 'Grok', type: 'AI', score: 999, avatar: 'frontend/Meme/public/templates/template4.jpg' },
-    { rank: 5, username: 'MemeMaker127', type: 'Human', score: 912, avatar: 'frontend/Meme/public/templates/template5.jpg' },
-    { rank: 6, username: 'Claude', type: 'AI', score: 893, avatar: 'frontend/Meme/public/templates/template6.jpg' },
-    { rank: 7, username: 'Deepseek', type: 'AI', score: 707, avatar: 'frontend/Meme/public/templates/template7.jpg' },
-    { rank: 8, username: 'MemeKing42', type: 'Human', score: 645, avatar: 'frontend/Meme/public/templates/template8.jpg' },
-    { rank: 9, username: 'GPT-Memer', type: 'AI', score: 598, avatar: 'frontend/Meme/public/templates/template9.jpg' },
-    { rank: 10, username: 'LaughMaster', type: 'Human', score: 532, avatar: 'frontend/Meme/public/templates/template10.jpg' }
+    { rank: 1, username: 'MemeMaker260', type: 'Human', votesCount: 1412, avatar: 'frontend/Meme/public/templates/template1.jpg' },
+    { rank: 2, username: 'OpenAI', type: 'AI', votesCount: 1378, avatar: 'frontend/Meme/public/templates/template2.jpg' },
+    { rank: 3, username: 'MemeMaker7', type: 'Human', votesCount: 1110, avatar: 'frontend/Meme/public/templates/template3.jpg' },
+    { rank: 4, username: 'Grok', type: 'AI', votesCount: 999, avatar: 'frontend/Meme/public/templates/template4.jpg' },
+    { rank: 5, username: 'MemeMaker127', type: 'Human', votesCount: 912, avatar: 'frontend/Meme/public/templates/template5.jpg' },
+    { rank: 6, username: 'Claude', type: 'AI', votesCount: 893, avatar: 'frontend/Meme/public/templates/template6.jpg' },
+    { rank: 7, username: 'Deepseek', type: 'AI', votesCount: 707, avatar: 'frontend/Meme/public/templates/template7.jpg' },
+    { rank: 8, username: 'MemeKing42', type: 'Human', votesCount: 645, avatar: 'frontend/Meme/public/templates/template8.jpg' },
+    { rank: 9, username: 'GPT-Memer', type: 'AI', votesCount: 598, avatar: 'frontend/Meme/public/templates/template9.jpg' },
+    { rank: 10, username: 'LaughMaster', type: 'Human', votesCount: 532, avatar: 'frontend/Meme/public/templates/template10.jpg' }
   ]
 
   const summaryData = [
     {
       type: 'Human',
-      score: leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.score, 0),
+      totalVotes: leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.votesCount, 0),
       count: leaderboardData.filter(e => e.type === 'Human').length,
-      avgScore: Math.round(
-        leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.score, 0) /
+      avgVotes: Math.round(
+        leaderboardData.filter(e => e.type === 'Human').reduce((s, e) => s + e.votesCount, 0) /
         leaderboardData.filter(e => e.type === 'Human').length
       )
     },
     {
       type: 'AI',
-      score: leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.score, 0),
+      totalVotes: leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.votesCount, 0),
       count: leaderboardData.filter(e => e.type === 'AI').length,
-      avgScore: Math.round(
-        leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.score, 0) /
+      avgVotes: Math.round(
+        leaderboardData.filter(e => e.type === 'AI').reduce((s, e) => s + e.votesCount, 0) /
         leaderboardData.filter(e => e.type === 'AI').length
       )
     }
@@ -78,7 +78,7 @@ const Leaderboard = () => {
                 <th>Rank</th>
                 <th>User</th>
                 <th>Type</th>
-                <th>Score</th>
+                <th>Votes Count</th>
               </tr>
             </thead>
             <tbody>
@@ -95,7 +95,7 @@ const Leaderboard = () => {
                     {entry.username}
                   </td>
                   <td><span className={`type-badge ${entry.type.toLowerCase()}`}>{entry.type}</span></td>
-                  <td>{entry.score}</td>
+                  <td>{entry.votesCount}</td>
                 </tr>
               ))}
             </tbody>
@@ -111,9 +111,9 @@ const Leaderboard = () => {
               <div key={item.type} className="summary-card">
                 <h4>{item.type}</h4>
                 <div className="summary-stats">
-                  <p>Total Score: <strong>{item.score}</strong></p>
+                  <p>Total Votes: <strong>{item.totalVotes}</strong></p>
                   <p>Top Creators: <strong>{item.count}</strong></p>
-                  <p>Avg Score: <strong>{item.avgScore}</strong></p>
+                  <p>Avg Votes: <strong>{item.avgVotes}</strong></p>
                 </div>
                 <div className={`rank-badge ${index === 0 ? 'first' : 'second'}`}>#{index + 1}</div>
               </div>
@@ -157,7 +157,7 @@ const Leaderboard = () => {
           <div className="meme-modal-content" onClick={(e) => e.stopPropagation()}>
             <img src={selectedMeme.image} alt="Meme full view" />
             <p>
-              <strong>{selectedMeme.author}</strong> ({selectedMeme.type}) – {selectedMeme.points} Punkte
+              <strong>{selectedMeme.author}</strong> ({selectedMeme.type}) – {selectedMeme.points} Points
             </p>
             <button className="close-btn" onClick={() => setSelectedMeme(null)}>Close</button>
           </div>
