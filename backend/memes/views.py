@@ -86,17 +86,7 @@ cloudinary.config(
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def import_cloudinary_data(request):
-    """
-    Cloudinary에서 prefix(폴더) 기준으로 모든 이미지를 페이지네이션으로 끝까지 읽어와
-    Meme 또는 MemeTemplate로 DB에 채워 넣는다.
-    body 예:
-    {
-      "folder": "memes/ai/",
-      "type": "meme",           # "meme" | "template"
-      "category": "General",
-      "topic": "AI"
-    }
-    """
+
     folder = request.data.get("folder") or ""
     type_ = request.data.get("type", "template")
     topic = request.data.get("topic", "")
@@ -369,10 +359,10 @@ def random_memes(request):
 @api_view(["POST"])
 def vote_meme(request):
     meme_id = request.data.get("meme_id")
-    humor = request.data.get("humor_score", 5)
-    creativity = request.data.get("creativity_score", 5)
-    cultural = request.data.get("cultural_score", 5)
-    user_id = request.data.get("user_id", "anonymous")
+    # humor = request.data.get("humor_score", 5)
+    # creativity = request.data.get("creativity_score", 5)
+    # cultural = request.data.get("cultural_score", 5)
+    # user_id = request.data.get("user_id", "anonymous")
 
     if not meme_id:
         return Response({"error": "meme_id required"}, status=400)
@@ -382,34 +372,39 @@ def vote_meme(request):
     except Meme.DoesNotExist:
         return Response({"error": "Meme not found"}, status=404)
 
-    evaluation = Evaluation.objects.create(
-        meme=meme,
-        humor_score=humor,
-        creativity_score=creativity,
-        cultural_score=cultural,
-        user_id=user_id
-    )
+ # for votingsystem
+    # evaluation = Evaluation.objects.create(
+    #     meme=meme,
+    #     humor_score=humor,
+    #     creativity_score=creativity,
+    #     cultural_score=cultural,
+    #     user_id=user_id
+    # )
+    # all_evals = meme.evaluations.all()
+    # total_votes = all_evals.count()
+    # meme.humor_avg = sum(e.humor_score for e in all_evals) / total_votes
+    # meme.creativity_avg = sum(e.creativity_score for e in all_evals) / total_votes
+    # meme.cultural_avg = sum(e.cultural_score for e in all_evals) / total_votes
+    # meme.total_votes = total_votes
+    # meme.save(update_fields=["humor_avg", "creativity_avg", "cultural_avg", "total_votes"])
+    #
+    # print(f" Meme {meme_id} voted with {humor}/{creativity}/{cultural}")
+    # return Response({
+    #     "success": True,
+    #     "meme_id": meme.id,
+    #     "total_votes": total_votes,
+    #     "avg_scores": {
+    #         "humor": meme.humor_avg,
+    #         "creativity": meme.creativity_avg,
+    #         "cultural": meme.cultural_avg,
+    #     },
+    # })
 
-    all_evals = meme.evaluations.all()
-    total_votes = all_evals.count()
-    meme.humor_avg = sum(e.humor_score for e in all_evals) / total_votes
-    meme.creativity_avg = sum(e.creativity_score for e in all_evals) / total_votes
-    meme.cultural_avg = sum(e.cultural_score for e in all_evals) / total_votes
-    meme.total_votes = total_votes
-    meme.save(update_fields=["humor_avg", "creativity_avg", "cultural_avg", "total_votes"])
+    meme.total_votes = meme.total_votes + 1
+    meme.save(update_fields=["total_votes"])
+    return Response({"success": True, "total_votes": meme.total_votes})
 
-    print(f" Meme {meme_id} voted with {humor}/{creativity}/{cultural}")
 
-    return Response({
-        "success": True,
-        "meme_id": meme.id,
-        "total_votes": total_votes,
-        "avg_scores": {
-            "humor": meme.humor_avg,
-            "creativity": meme.creativity_avg,
-            "cultural": meme.cultural_avg,
-        },
-    })
 
 
 
