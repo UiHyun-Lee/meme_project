@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet, generate_ai_meme, import_cloudinary_data, \
-    UserMemeUploadView, list_cloudinary_templates,report_meme,random_memes,vote_meme,leaderboard
+    UserMemeUploadView, list_or_import_cloudinary_templates,report_meme,random_memes,vote_meme,leaderboard
 from evaluations.views import EvaluationViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -38,7 +38,7 @@ urlpatterns = [
 
     path("api/generate_ai_meme/", generate_ai_meme),
     path('api/import-cloudinary/', import_cloudinary_data),
-    path('api/cloudinary-templates/', list_cloudinary_templates),
+    path('api/cloudinary-templates/', list_or_import_cloudinary_templates),
 
     path('api/user-memes/', UserMemeUploadView.as_view()),
 

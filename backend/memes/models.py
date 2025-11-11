@@ -18,7 +18,7 @@ class MemeTemplate(models.Model):
         return f"{self.category.name} - {self.id}"
 
 class Meme(models.Model):
-    template = models.ForeignKey(MemeTemplate, on_delete=models.CASCADE, related_name="memes")
+    template = models.ForeignKey(MemeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
     image = models.ImageField(upload_to="memes/")
     caption = models.TextField()
     created_by = models.CharField(max_length=20)   # "human" or "ai"
