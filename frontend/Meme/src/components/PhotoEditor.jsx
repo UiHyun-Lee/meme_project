@@ -39,12 +39,12 @@ export default function PhotoEditor({ onMemeCreate }) {
           const data = await response.json();
           setTemplates(data);
         } else {
-          console.error('Fehler beim Laden der Templates');
+          console.error('Error loading templates');
           // Fallback auf lokale Templates
           setTemplates(generateFallbackTemplates());
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Templates:', error);
+        console.error('Error loading templates:', error);
         // Fallback auf lokale Templates
         setTemplates(generateFallbackTemplates());
       }
@@ -76,7 +76,7 @@ export default function PhotoEditor({ onMemeCreate }) {
 
   const addText = () => {
     if (!selectedTemplate) {
-      alert('Bitte wähle zuerst eine Vorlage aus.');
+      alert('Please select a template first.');
       return;
     }
 
@@ -130,7 +130,7 @@ export default function PhotoEditor({ onMemeCreate }) {
 
   // Double tap handler for mobile
   const handleTextDoubleTap = (el) => {
-    if (window.confirm('Text löschen?')) {
+    if (window.confirm('Delete text?')) {
       setTextElements(prev => prev.filter(x => x.id !== el.id));
       if (currentText?.id === el.id) {
         setCurrentText(null);
@@ -264,7 +264,7 @@ export default function PhotoEditor({ onMemeCreate }) {
 
   const handleTextContextMenu = (e, el) => {
     e.preventDefault();
-    if (window.confirm('Text löschen?')) {
+    if (window.confirm('Delete text?')) {
       setTextElements(prev => prev.filter(x => x.id !== el.id));
       if (currentText?.id === el.id) {
         setCurrentText(null);
@@ -307,7 +307,7 @@ export default function PhotoEditor({ onMemeCreate }) {
   };
 
   const handleDownloadMeme = async () => {
-    if (!selectedTemplate) return alert('Bitte Vorlage auswählen.');
+    if (!selectedTemplate) return alert('Please select a template.');
     if (!imgContainerRef.current) return;
 
     try {
@@ -327,13 +327,13 @@ export default function PhotoEditor({ onMemeCreate }) {
       a.remove();
     } catch (err) {
       console.error(err);
-      alert('Fehler beim Erstellen des Bildes');
+      alert('Error creating image');
     }
   };
 
   const handleCreateMeme = async () => {
     if (!selectedTemplate) {
-      alert('Bitte Vorlage auswählen.');
+      alert('Please select a template.');
       return;
     }
 
@@ -366,7 +366,7 @@ export default function PhotoEditor({ onMemeCreate }) {
         topic: "School"
       };
 
-      console.log('Sende Meme an Backend...', {
+      console.log('Sending meme to backend...', {
         template_id: selectedTemplate.id,
         caption: caption,
         image_length: imageData.length
@@ -383,22 +383,22 @@ export default function PhotoEditor({ onMemeCreate }) {
 
       if (response.ok) {
         const savedMeme = await response.json();
-        console.log('Meme erfolgreich hochgeladen:', savedMeme);
+        console.log('Meme successfully uploaded:', savedMeme);
         
         // Callback aufrufen
         if (onMemeCreate) {
           onMemeCreate(savedMeme);
         }
         
-        alert('Meme erfolgreich erstellt und hochgeladen!');
+        alert('Meme successfully created and uploaded!');
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Upload fehlgeschlagen mit Status: ${response.status}`);
+        throw new Error(errorData.error || `Upload failed with status: ${response.status}`);
       }
 
     } catch (error) {
-      console.error('Fehler beim Hochladen:', error);
-      alert(`Fehler beim Hochladen: ${error.message}`);
+      console.error('Error uploading:', error);
+      alert(`Upload error: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
