@@ -6,11 +6,11 @@ const SubmitMeme = () => {
   const [recentUploads, setRecentUploads] = useState([])
 
   const handleMemeCreate = (memeData) => {
-    console.log('Meme erfolgreich hochgeladen:', memeData)
+    console.log('Meme uploaded successfully:', memeData)
     
     // Erfolgsmeldung mit mehr Details
     const successMessage = `
-Meme erfolgreich hochgeladen!
+Meme uploaded successfully!
       
 ID: ${memeData.id}
 Template: ${memeData.template}
@@ -28,6 +28,7 @@ Erstellt am: ${new Date(memeData.created_at).toLocaleString()}
   }
 
   return (
+    <>
     <div style={{ 
         textAlign: 'center', 
         marginBottom: '30px',
@@ -163,29 +164,28 @@ Erstellt am: ${new Date(memeData.created_at).toLocaleString()}
     Your submitted memes will be visible to other users and can be rated in the competition!
   </p>
   </div>  
-  {/* Footer */}
-      <footer
-        style={{
-          marginTop: "40px",
-          padding: "20px",
-          textAlign: "center"
-        }}
-      >
-        <button
-          onClick={() => (window.location.href = '/impressum')}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "8px",
-            border: "none",
-            fontWeight: "bold",
-            backgroundColor: "#ffd700",
-            cursor: "pointer"
-          }}
-        >
-          Impressum
-        </button>
-      </footer>  
+   
   </div>
+  <footer className="site-footer">
+        <div className="footer-links">
+          <a
+            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Impressum
+          </a>
+          <span className="footer-separator">|</span>
+          <a
+            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+        </div>
+      </footer>
+  </>
   )
 }
 

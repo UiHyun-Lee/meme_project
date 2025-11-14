@@ -1208,8 +1208,94 @@ button:hover {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: rgba(255, 0, 0, 0.8);
+  background: #FFD700;
   border: none;
   border-radius: 50%;
   padding: 6px;
+}
+
+.site-footer {
+  width: 100%;
+  margin-top: 40px;
+  padding: 20px 0;
+  background-color: #002b5c; /* dark blue */
+  text-align: center;
+  color: #ffffff;
+
+  position: relative;
+  left: 0;
+  right: 0;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-links a {
+  font-weight: 600;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.footer-separator {
+  color: #ffffff;
+}
+
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #002b5c; /* TU Darmstadt dark blue */
+  color: white;
+  padding: 20px;
+  z-index: 9999;
+  box-shadow: 0 -3px 10px rgba(0,0,0,0.3);
+}
+
+.cookie-content {
+  max-width: 900px;
+  margin: auto;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.cookie-content a {
+  color: #ffd700;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.cookie-buttons {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.cookie-accept,
+.cookie-reject {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.cookie-accept {
+  background-color: #ffd700;
+  color: black;
+}
+
+.cookie-reject {
+  background-color: #ffffff;
+  color: #002b5c;
 }

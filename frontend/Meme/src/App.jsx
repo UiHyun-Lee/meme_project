@@ -4,7 +4,6 @@ import Voting from './components/Voting'
 import Leaderboard from './components/Leaderboard'
 import SubmitMeme from './components/SubmitMeme'
 import About from './components/About'
-import Impressum from './components/Impressum'   // ✅ NEU hinzugefügt
 import './App.css'
 
 function App() {
@@ -60,7 +59,6 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/submit" element={<SubmitMeme />} />
           <Route path="/about" element={<About />} />
-          <Route path="/impressum" element={<Impressum />} />  {/* ✅ NEUE ROUTE */}
         </Routes>
       </div>
     </Router>

@@ -2,6 +2,7 @@ import React from 'react'
 
 const About = () => {
   return (
+    <>
     <div className="about-container">
       <h2>About Us</h2>
       <p>
@@ -11,38 +12,38 @@ const About = () => {
         We are a student-led research team at the Human-Consistent Interaction group, turning meme culture into serious science (with a view). Our goal is to explore creativity at the intersection of human and artificial intelligence.
       </p>
       <p>
-        Your participation helps build AI models that understand something as nuanced as meme-making. So if you've ever thought, "We could do better" – here we are, building an open platform where anyone can prove it.
+        Your participation helps understand AI models that understand something as nuanced as meme-making. So if you've ever thought, "We could do better" – here we are, building an open platform where anyone can prove it.
       </p>
       <p>
-        The platform is part of a Bachelor thesis project exploring humor, co-creativity, and the cultural role of memes. Users can submit their own memes, vote in head-to-head battles, and even generate memes with cutting-edge AI. Every vote contributes to our study, helping us answer: who makes the better meme – people or machines?
+        The platform is part of a Bachelor thesis project exploring humor, co-creativity, and the cultural role of memes. Users can submit their own memes and vote in head-to-head battles. Every vote contributes to our study, helping us answer: who makes the better memes – people or machines?
       </p>
       <p>
         Whether you're a meme connoisseur, an AI enthusiast, or just here for the laughs, you're part of the experiment. Let the meme battle begin.
       </p>
 
-      {/* Footer */}
-      <footer
-        style={{
-          marginTop: "40px",
-          padding: "20px",
-          textAlign: "center"
-        }}
-      >
-        <button
-          onClick={() => (window.location.href = '/impressum')}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "8px",
-            border: "none",
-            fontWeight: "bold",
-            backgroundColor: "#ffd700",
-            cursor: "pointer"
-          }}
-        >
-          Impressum
-        </button>
-      </footer>
+      
     </div>
+
+    <footer className="site-footer">
+        <div className="footer-links">
+          <a
+            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Impressum
+          </a>
+          <span className="footer-separator">|</span>
+          <a
+            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy 
+          </a>
+        </div>
+      </footer>
+      </>
   )
 }
 
