@@ -111,7 +111,6 @@ export default function LoginModal({ onClose, onSuccess }) {
       localStorage.setItem("refreshToken", response.data.refresh);
       localStorage.setItem("userEmail", userInfo.email);
       localStorage.setItem("userName", userInfo.name);
-      localStorage.setItem("userPicture", userInfo.picture);
 
       onSuccess();
     } catch (err) {

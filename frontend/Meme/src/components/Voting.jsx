@@ -246,11 +246,26 @@
 
 import React, { useEffect, useState } from 'react'
 import { getRandomMemes, voteMeme } from '../api'
+import CookieBanner from "./CookieBanner";
 
 const Voting = () => {
   const [memes, setMemes] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+
+  const [cookieConsent, setCookieConsent] = useState(
+  localStorage.getItem("cookieConsent")
+);
+
+  const handleAcceptCookies = () => {
+  localStorage.setItem("cookieConsent", "all");
+  setCookieConsent("all");
+};
+
+  const handleRejectCookies = () => {
+  localStorage.setItem("cookieConsent", "necessary");
+  setCookieConsent("necessary");
+};
 
   useEffect(() => {
     fetchMemes()
@@ -381,27 +396,34 @@ const Voting = () => {
       {message && <div className="vote-feedback" style={{ marginTop: 16 }}>{message}</div>}
 
            {/* Footer */}
-      <footer
-        style={{
-          marginTop: "40px",
-          padding: "20px",
-          textAlign: "center"
-        }}
-      >
-        <button
-          onClick={() => (window.location.href = '/impressum')}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "8px",
-            border: "none",
-            fontWeight: "bold",
-            backgroundColor: "#ffd700",
-            cursor: "pointer"
-          }}
-        >
-          Impressum
-        </button>
+      {/* Footer */}
+      <footer className="site-footer">
+        <div className="footer-links">
+          <a
+            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Impressum
+          </a>
+          <span className="footer-separator">|</span>
+          <a
+            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+        </div>
       </footer>
+
+      {/* Cookie Banner (only if no consent yet) */}
+      {!cookieConsent && (
+        <CookieBanner
+          onAccept={handleAcceptCookies}
+          onReject={handleRejectCookies}
+        />
+      )}
     </div>
 
 

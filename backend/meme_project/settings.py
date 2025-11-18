@@ -144,7 +144,7 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 

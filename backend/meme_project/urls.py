@@ -19,8 +19,9 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet, generate_ai_meme, import_cloudinary_data, \
-    UserMemeUploadView, list_or_import_cloudinary_templates,report_meme,random_memes,vote_meme,leaderboard
+    UserMemeUploadView, list_or_import_cloudinary_templates, report_meme, random_memes, vote_meme, leaderboard
 from evaluations.views import EvaluationViewSet
+from memes.auth_views import GoogleLoginView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -46,6 +47,7 @@ urlpatterns = [
     path('api/memes/vote/', vote_meme),
     path('api/memes/report/', report_meme),
     path('api/leaderboard/', leaderboard),
+    path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
     path('api/', include(router.urls)),
     # JWT
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),
