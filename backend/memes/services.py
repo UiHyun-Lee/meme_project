@@ -21,7 +21,11 @@ def generate_ai_meme_design(category_name: str, template_desc: str, template_url
 
     Your task:
     1. Analyze the image and imagine how a human would make a meme using it.
+<<<<<<< HEAD
     2. Create between 1 and N meme designs (N ≥ 1). e.g. between 7 and 10 memems randomly!!!!.
+=======
+    2. Create between 1 and N meme designs (N ≥ 1). e.g. between 7 and 10 memems.
+>>>>>>> origin/main
     3. For each meme, define one or more text captions.
     4. Output ONLY valid JSON.
     5. For each caption, define:
@@ -154,5 +158,8 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     buffer.seek(0)
     upload_result = cloudinary.uploader.upload(buffer, folder="memes/")
     return upload_result["secure_url"]
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main

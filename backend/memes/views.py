@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -12,6 +13,14 @@ from .services import generate_ai_meme_design, apply_ai_text_to_image
 import cloudinary.api
 import os
 import cloudinary
+=======
+from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Category, MemeTemplate, Meme
+from .serializers import CategorySerializer, MemeTemplateSerializer, MemeSerializer
+from .services import generate_ai_meme_design, apply_ai_text_to_image
+>>>>>>> origin/main
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -31,6 +40,13 @@ class MemeViewSet(viewsets.ModelViewSet):
 
 @api_view(["POST"])
 def generate_ai_meme(request):
+<<<<<<< HEAD
+=======
+    """
+    Cloudinary의 실제 이미지를 기반으로,
+    AI가 텍스트+스타일 JSON 생성 → Pillow로 합성 → Cloudinary 업로드 → DB 저장
+    """
+>>>>>>> origin/main
     template_id = request.data.get("template")
     if not template_id:
         return Response({"error": "template id required"}, status=400)
@@ -40,6 +56,10 @@ def generate_ai_meme(request):
     except MemeTemplate.DoesNotExist:
         return Response({"error": "Template not found"}, status=404)
 
+<<<<<<< HEAD
+=======
+    # 1️⃣ LLM 호출 → JSON 생성
+>>>>>>> origin/main
     design = generate_ai_meme_design(
         category_name=template.category.name,
         template_desc=template.description or "",
@@ -52,10 +72,15 @@ def generate_ai_meme(request):
     memes_data = design.get("memes", [])
     created_memes = []
 
+<<<<<<< HEAD
+=======
+    # 2️⃣ 각 밈 디자인 합성 + Cloudinary 업로드
+>>>>>>> origin/main
     for meme_design in memes_data:
         captions = meme_design.get("captions", [])
         final_url = apply_ai_text_to_image(template.image.url, captions)
 
+<<<<<<< HEAD
         upload_result = cloudinary.uploader.upload(
             final_url,
             folder="memes/ai/",
@@ -65,11 +90,17 @@ def generate_ai_meme(request):
         meme = Meme.objects.create(
             template=template,
             image=upload_result["secure_url"],
+=======
+        meme = Meme.objects.create(
+            template=template,
+            image=final_url,
+>>>>>>> origin/main
             caption="; ".join([c["text"] for c in captions]),
             created_by="ai",
             format="macro",
             topic=template.category.name
         )
+<<<<<<< HEAD
 
         created_memes.append(MemeSerializer(meme).data)
 
@@ -427,3 +458,9 @@ def leaderboard(request):
 
     return Response(serializer.data)
 
+=======
+        created_memes.append(MemeSerializer(meme).data)
+
+    # 3️⃣ 완성된 밈 리스트 반환
+    return Response(created_memes)
+>>>>>>> origin/main
