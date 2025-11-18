@@ -1,12 +1,44 @@
-import React from 'react'
+import React from "react";
+import ProfileHeader from "./ProfileHeader";
 
-const Header = () => {
+export default function Header() {
+  const isLoggedIn = !!localStorage.getItem("accessToken");
+
   return (
-    <header className="container text-center">
-      <h1>Meme Arena – Who's Funnier: AI or Humans?</h1>
-      <p>Vote. Decide the Future of humor.</p>
-    </header>
-  )
-}
+    <header
+      style={{
+        padding: "12px 20px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        background: "#1f1f1f",
+        color: "white",
+        borderBottom: "1px solid #333",
+      }}
+    >
+      {/* LEFT SIDE */}
+      <div style={{ fontSize: "20px", fontWeight: "bold" }}>Meme Battle</div>
 
-export default Header
+      {/* RIGHT SIDE */}
+      <div>
+        {!isLoggedIn ? (
+          <button
+            onClick={() => window.dispatchEvent(new Event("openGoogleLogin"))}
+            style={{
+              padding: "8px 16px",
+              background: "#4f46e5",
+              color: "white",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Login
+          </button>
+        ) : (
+          <ProfileHeader />
+        )}
+      </div>
+    </header>
+  );
+}

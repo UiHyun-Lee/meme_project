@@ -12,8 +12,13 @@ __pycache__/
 
 # OS files
 .DS_Store
+<<<<<<< HEAD
+.config/
+=======
 
 # Environment variables
 .env
-.config/
+.env.*
+backend/.env
+*.env
 

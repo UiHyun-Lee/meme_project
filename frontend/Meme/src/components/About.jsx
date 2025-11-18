@@ -19,6 +19,27 @@ const About = () => {
       <p>
         Whether you're a meme connoisseur, an AI enthusiast, or just here for the laughs, you're part of the experiment. Let the meme battle begin.
       </p>
+
+      {/* Footer */}
+    <footer className="site-footer">
+        <div className="footer-links">
+          <a
+            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Impressum
+          </a>
+          <span className="footer-separator">|</span>
+          <a
+            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

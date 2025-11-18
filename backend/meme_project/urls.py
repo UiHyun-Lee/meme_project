@@ -16,12 +16,12 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
-from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet, generate_ai_meme
+from memes.views import CategoryViewSet, MemeTemplateViewSet, MemeViewSet, generate_ai_meme, import_cloudinary_data, \
+    UserMemeUploadView, list_or_import_cloudinary_templates, report_meme, random_memes, vote_meme, leaderboard
 from evaluations.views import EvaluationViewSet
+from memes.auth_views import GoogleLoginView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -32,12 +32,23 @@ router = routers.DefaultRouter()
 router.register(r'categories', CategoryViewSet)
 router.register(r'templates', MemeTemplateViewSet)
 router.register(r'memes', MemeViewSet)
-router.register(r'evaluations', EvaluationViewSet, basename='evaluation')
+router.register(r'evaluations', EvaluationViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
+
     path("api/generate_ai_meme/", generate_ai_meme),
+    path('api/import-cloudinary/', import_cloudinary_data),
+    path('api/cloudinary-templates/', list_or_import_cloudinary_templates),
+
+    path('api/user-memes/', UserMemeUploadView.as_view()),
+
+    path('api/memes/random/', random_memes),
+    path('api/memes/vote/', vote_meme),
+    path('api/memes/report/', report_meme),
+    path('api/leaderboard/', leaderboard),
+    path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
+    path('api/', include(router.urls)),
     # JWT
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
