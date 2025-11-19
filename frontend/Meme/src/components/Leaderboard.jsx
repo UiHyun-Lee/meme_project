@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { getLeaderboard } from '../api'
+import Typewriter from "./Typewriter";
+import FadeInSection from "./FadeInSection";
 
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('individual')
@@ -48,8 +50,13 @@ const Leaderboard = () => {
       borderRadius: '12px',
       color: 'white'
     }}>
-      <h2>Leaderboard</h2>
-      <p>Who Reigns Supreme in the Meme Arena?</p>
+
+      <h2>
+          <Typewriter text="Leaderboard" speed={50} delayBeforeStart={0} />
+      </h2>
+      <p>
+           <Typewriter text="Who Reigns Supreme in the Meme Arena?" speed={50} delayBeforeStart={1000}/><span className="cursor">|</span>
+      </p>
 
       <div className="tab-navigation">
         <button className={activeTab === 'individual' ? 'active' : ''} onClick={() => setActiveTab('individual')}>Individual Rankings</button>

@@ -158,8 +158,5 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     buffer.seek(0)
     upload_result = cloudinary.uploader.upload(buffer, folder="memes/")
     return upload_result["secure_url"]
-<<<<<<< HEAD
 
 
-=======
->>>>>>> origin/main

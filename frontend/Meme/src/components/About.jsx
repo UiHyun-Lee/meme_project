@@ -1,9 +1,15 @@
 import React from 'react'
+import Typewriter from "./Typewriter";
+import FadeInSection from "./FadeInSection";
 
 const About = () => {
   return (
+
     <div className="about-container">
-      <h2>About Us</h2>
+      <h2>
+          <Typewriter text="About Us" speed={50} delayBeforeStart={0} />
+      </h2>
+       <FadeInSection delay={0.4}>
       <p>
         Welcome to The Meme Arena – where humans and AIs clash in the ultimate battle of humor!
       </p>
@@ -19,6 +25,7 @@ const About = () => {
       <p>
         Whether you're a meme connoisseur, an AI enthusiast, or just here for the laughs, you're part of the experiment. Let the meme battle begin.
       </p>
+      </FadeInSection>
 
       {/* Footer */}
     <footer className="site-footer">

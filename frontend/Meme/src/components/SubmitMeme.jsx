@@ -288,6 +288,8 @@ import PhotoEditor from './PhotoEditor'
 import html2canvas from 'html2canvas'
 import { uploadMeme } from '../api'
 import { ensureLogin } from "../utils/login";
+import Typewriter from "./Typewriter";
+import FadeInSection from "./FadeInSection";
 
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
@@ -335,6 +337,7 @@ const SubmitMeme = () => {
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       const blob = await (await fetch(dataUrl)).blob();
       const form = new FormData();
+
       form.append('image_file', new File([blob], 'meme.jpg', { type: 'image/jpeg' }));
       form.append('caption', 'User created meme');
       form.append('created_by', 'human');
@@ -382,13 +385,13 @@ const SubmitMeme = () => {
           marginBottom: '10px',
           textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
         }}>
-          Submit Your Meme
+          <Typewriter text="Submit Your Meme" speed={50} delayBeforeStart={0} />
         </h2>
         <p style={{ fontSize: '1.2rem', marginBottom: '8px', opacity: 0.9 }}>
-          Create a Meme. Challenge the Machines.
+          <Typewriter text="Create a Meme. Challenge the Machines." speed={50} delayBeforeStart={1000}/>
         </p>
         <p style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>
-          Use our photo editor to create your meme and join the competition!
+           <Typewriter text="Use our photo editor to create your meme and join the competition!" speed={50} delayBeforeStart={2000}/>  <span className="cursor">|</span>
         </p>
         <div className="submit-container">
           <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
@@ -397,7 +400,7 @@ const SubmitMeme = () => {
         </div>
       </div>
 
-      {/* 로그인 X → 시작 버튼만 */}
+      {/* login x */}
       {!isLoggedIn && (
         <button
           onClick={handleStartEditor}
@@ -505,13 +508,16 @@ const SubmitMeme = () => {
         borderRadius: '12px',
         color: 'white'
       }}>
-        <h4 style={{ color: '#1a1a1a', marginBottom: '15px' }}>How to create your meme:</h4>
+
+      <FadeInSection delay={0.4}>
+
+        <h4 style={{ fontSize: '1.5rem', color: 'white', marginBottom: '15px', fontWeight: 900 }}>How to create your meme:</h4>
         <ol style={{
-          color: '#0d1b2a',
-          lineHeight: '1.8',
+          color: 'white',
+          lineHeight: '2.5',
           paddingLeft: '22px',
           fontSize: '1.05rem',
-          fontWeight: 500
+          fontWeight: 600
         }}>
           <li>Choose a template from the selection above</li>
           <li>Add text elements and customize their style</li>
@@ -519,6 +525,8 @@ const SubmitMeme = () => {
           <li>Double-click text to edit, right-click to delete</li>
           <li>Download your meme or submit it to the database</li>
         </ol>
+      </FadeInSection>
+
       </div>
 
   <footer className="site-footer">
