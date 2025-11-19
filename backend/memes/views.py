@@ -367,7 +367,7 @@ def report_meme(request):
 @permission_classes([AllowAny])
 def leaderboard(request):
     """
-    Returns top memes sorted by total_votes.
+    Returns top memes sorted by total_votes!
     """
     memes = Meme.objects.all().order_by("-total_votes")[:10]
     serializer = MemeSerializer(memes, many=True)
