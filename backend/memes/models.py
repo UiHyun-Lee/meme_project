@@ -59,8 +59,13 @@ class MemeTemplate(models.Model):
         return f"{self.category.name} - {self.id}"
 
 class Meme(models.Model):
-    # template = models.ForeignKey(MemeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
-    template = models.ForeignKey(MemeTemplate, on_delete=models.CASCADE, related_name="memes")
+    template = models.ForeignKey(
+        MemeTemplate,
+        on_delete=models.SET_NULL,   # 템플릿 지워지면 template만 null로
+        null=True,
+        blank=True,
+        related_name="memes"
+    )
     image = CloudinaryField('image')
     caption = models.TextField()
     created_by = models.CharField(max_length=20)   # "human" or "ai"
@@ -72,6 +77,6 @@ class Meme(models.Model):
     cultural_avg = models.FloatField(default=0)
     total_votes = models.IntegerField(default=0)
 
-
     def __str__(self):
-        return f"Meme {self.id} from {self.template.category.name}"
+        return f"Meme {self.id} from {self.template.category.name if self.template else 'no template'}"
+
