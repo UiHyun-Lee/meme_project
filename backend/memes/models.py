@@ -59,7 +59,7 @@ class MemeTemplate(models.Model):
         return f"{self.category.name} - {self.id}"
 
 class Meme(models.Model):
-    template = models.ForeignKey(MemeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    # template = models.ForeignKey(MemeTemplate, on_delete=models.SET_NULL, null=True, blank=True)
     template = models.ForeignKey(MemeTemplate, on_delete=models.CASCADE, related_name="memes")
     image = CloudinaryField('image')
     caption = models.TextField()
