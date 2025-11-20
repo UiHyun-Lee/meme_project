@@ -160,16 +160,16 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     return upload_result["secure_url"]
 
 
-# def upload_template_image(file):
-#     result = cloudinary.uploader.upload(
-#         file,
-#         folder="templates/"
-#     )
-#     return result["secure_url"]
-#
-# def upload_user_meme(file):
-#     result = cloudinary.uploader.upload(
-#         file,
-#         folder="memes/"
-#     )
-#     return result["secure_url"]
+def upload_template_image(file):
+    result = cloudinary.uploader.upload(
+        file,
+        folder="templates/"
+    )
+    return result["secure_url"]
+
+def upload_user_meme(file):
+    result = cloudinary.uploader.upload(
+        file,
+        folder="memes/"
+    )
+    return result["secure_url"]
