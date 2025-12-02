@@ -261,9 +261,9 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     """
-    템플릿 정보를 보고, AI가 캡션 + 스타일(위치, 폰트, 색, 그림자 등)을 설계해서
-    captions 배열(항상 1개짜리)을 JSON으로 돌려줌.
-    JSON 포맷: { "captions": [ { ... } ] }
+    템플릿 정보를 보고, AI가 여러 개의 캡션 + 간단한 스타일을 설계해서
+    { "memes": [ { "caption", "position", "color", "emphasis" } ... ] } 를 반환.
+    emphasis: "normal" | "bold" | "italic" | "bold_italic"
     """
 
     prompt = f"""
@@ -276,46 +276,50 @@ You are given an existing meme template image:
 
 Your job:
 - Imagine how humans would create memes with this template.
-- Create EXACTLY ONE meme caption for this template.
-- For this single caption, you must also design the style (position, font, color, shadow, etc.).
+- Create between 2 and 5 different meme ideas.
+- For each meme, decide:
+  - a short, funny caption,
+  - where the text should be placed (top, bottom, or center),
+  - what text color fits the image,
+  - whether the style should be normal, bold, italic, or bold_italic.
 
-You MUST respond with a single JSON object with exactly one top-level key: "captions".
+You MUST respond with ONLY one JSON object with this structure:
 
-The value of "captions" MUST be an array with exactly one caption object.
-That single caption object MUST contain ALL of the following fields:
+{{
+  "memes": [
+    {{
+      "caption": "first meme caption",
+      "position": "top",
+      "color": "white",
+      "emphasis": "bold"
+    }},
+    {{
+      "caption": "second meme caption",
+      "position": "bottom",
+      "color": "#FFFF00",
+      "emphasis": "normal"
+    }}
+  ]
+}}
 
-- text: string, the meme caption text
-- position: one of "top", "bottom", "center", "custom"
-- x: integer (used only if position = "custom", otherwise you can still fill a sensible value)
-- y: integer (same rule as x)
-- font_face: string, e.g. "Impact", "Arial", "Comic Sans MS"
-- font_size: integer, e.g. between 32 and 96 depending on image size
-- color: string, a valid CSS color name or hex code like "#FFFFFF"
-- stroke_color: string, outline color, e.g. "black"
-- stroke_width: integer, e.g. 3 or 4
-- bold: boolean
-- italic: boolean
-- underline: boolean
-- shadow: object with the following fields:
-    - enabled: boolean
-    - x_offset: integer
-    - y_offset: integer
-    - color: string
-    - blur: integer
-
-IMPORTANT RULES:
-- Do NOT include any other top-level keys besides "captions".
-- Do NOT include comments or explanations.
+Rules:
+- The top-level object MUST have exactly one key: "memes".
+- "memes" MUST be a non-empty array (2 to 5 elements).
+- Each element MUST have exactly four keys:
+  - "caption": string
+  - "position": "top", "bottom", or "center"
+  - "color": string (CSS color name or hex like "#FFFFFF")
+  - "emphasis": "normal", "bold", "italic", or "bold_italic"
+- Do NOT include any other keys or comments.
 - Do NOT wrap the JSON in backticks.
 - The response MUST be valid JSON.
-- The "captions" array MUST have exactly one element.
 """
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt.strip()}],
-            max_tokens=600,  # 여유 충분히
+            max_tokens=300,
             response_format={"type": "json_object"},
         )
     except Exception as e:
@@ -324,11 +328,9 @@ IMPORTANT RULES:
 
     msg = response.choices[0].message
 
-    # 최신 openai 클라이언트: parsed가 있으면 그걸 그대로 dict로 사용
     if hasattr(msg, "parsed") and msg.parsed is not None:
         return msg.parsed
 
-    # fallback: content를 직접 파싱
     raw = msg.content
     try:
         return json.loads(raw)
@@ -340,6 +342,7 @@ IMPORTANT RULES:
             "detail": str(e),
             "raw": raw[:600],
         }
+
 
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
