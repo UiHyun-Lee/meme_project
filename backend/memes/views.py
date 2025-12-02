@@ -391,7 +391,13 @@ import cloudinary
 import cloudinary.api
 import cloudinary.uploader
 import os
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from openai import OpenAI
+from django.conf import settings
 
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 # Cloudinary 설정
 cloudinary.config(
