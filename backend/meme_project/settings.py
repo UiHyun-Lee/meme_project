@@ -41,6 +41,7 @@ if not SECRET_KEY:
 
 # DEBUG = True
 DEBUG = os.environ.get("DEBUG", "False") == "True"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ALLOWED_HOSTS = ['*']
 
@@ -82,6 +83,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://memeproject-production.up.railway.app",
 ]
 
 REST_FRAMEWORK = {
