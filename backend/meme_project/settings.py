@@ -40,7 +40,8 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 
 # DEBUG = True
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+# DEBUG = os.environ.get("DEBUG", "False") == "True"
+DEBUG = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 ALLOWED_HOSTS = ['*']
