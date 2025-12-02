@@ -486,6 +486,16 @@ class MemeViewSet(viewsets.ModelViewSet):
 #
 #     return Response(created_memes, status=status.HTTP_201_CREATED)
 
+import json
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from openai import OpenAI
+from django.conf import settings
+
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+
 @api_view(["POST"])
 def generate_ai_meme(request):
     template_id = request.data.get("template")
@@ -515,10 +525,23 @@ def generate_ai_meme(request):
 
     msg = res.choices[0].message
 
+    # 1) 새 버전이면 parsed 지원
     if hasattr(msg, "parsed") and msg.parsed is not None:
         data = msg.parsed
     else:
-        data = {"raw": msg.content}
+        # 2) 아니면 content가 JSON 문자열이니까 우리가 직접 파싱
+        try:
+            data = json.loads(msg.content)
+        except Exception as e:
+            print("JSON parse error:", e, msg.content)
+            return Response(
+                {
+                    "error": "json_parse_error",
+                    "detail": str(e),
+                    "raw": msg.content,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
     print("=== OpenAI success ===", data)
 
