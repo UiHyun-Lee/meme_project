@@ -94,7 +94,7 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 import json
 from openai import OpenAI
 from django.conf import settings
-
+import re
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 import json
