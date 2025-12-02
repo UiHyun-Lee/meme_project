@@ -521,6 +521,7 @@ def generate_ai_meme(request):
     return Response(
         {"from_openai": data},
         status=status.HTTP_200_OK,
+    )
 
 # =========================
 # Cloudinary Import (Templates / Memes)
