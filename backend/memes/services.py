@@ -10,42 +10,45 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
-
     prompt = f"""
     You are an expert meme designer AI.
 
-    You are given a real image (not to generate new ones) with the following info:
+    You are given a real image (not generating new ones) with the following info:
     - Category: {category_name}
     - Description: {template_desc}
     - Image URL: {template_url}
 
     Your task:
-    1. Analyze the image and imagine how a human would make a meme using it.
-    2. Create between 1 and N meme designs (N ≥ 1). e.g. between 7 and 10 memems randomly!!!!.
-    3. For each meme, define one or more text captions.
-    4. Output ONLY valid JSON.
-    5. For each caption, define:
-       - text: the meme caption
-       - position: top|bottom|center|custom
-       - x, y (if custom)
-       - font_face (e.g., Impact, Arial, Comic Sans MS)
-       - font_size (integer)
-       - color (CSS or RGB color)
-       - stroke_color
-       - stroke_width
-       - bold, italic, underline
-       - shadow {{
-            "enabled": true/false,
-            "x_offset": integer,
-            "y_offset": integer,
-            "color": string,
-            "blur": integer
-         }}
+    1. Analyze the provided image.
+    2. Generate between 7 and 10 meme design ideas.
+    3. Each meme design must include one or more captions.
+    4. Your response MUST be **valid JSON only**.
+    5. Each caption must contain the following fields:
 
-    DO NOT generate or describe a new image.
-    Only design meme text and style that fits the existing image.
+    {
+    "text": "string",
+      "position": "top | bottom | center | custom",
+      "x": number,
+      "y": number,
+      "font_face": "string",
+      "font_size": number,
+      "color": "string",
+      "stroke_color": "string",
+      "stroke_width": number,
+      "bold": true/false,
+      "italic": true/false,
+      "underline": true/false,
+      "shadow": {
+    "enabled": true/false,
+          "x_offset": number,
+          "y_offset": number,
+          "color": "string",
+          "blur": number
+      }
+    }
 
-    Return ONLY valid JSON in this format:
+    Return ONLY JSON in exactly this format:
+
     {{
       "memes": [
         {{
