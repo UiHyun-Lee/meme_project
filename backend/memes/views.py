@@ -488,46 +488,48 @@ class MemeViewSet(viewsets.ModelViewSet):
 
 @api_view(["POST"])
 def generate_ai_meme(request):
-    # 1) 요청 제대로 들어오는지 확인
     template_id = request.data.get("template")
     print("=== generate_ai_meme called, template_id:", template_id)
 
-    # 2) OpenAI 연결 테스트 (프롬프트는 초간단)
     try:
         res = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
-                    "content": "Return a JSON object: {\"ok\": true, \"msg\": \"hello from openai\"}"
+                    "content": 'Return a JSON object: {"ok": true, "msg": "hello"}'
                 }
             ],
             max_tokens=50,
             response_format={"type": "json_object"},
         )
     except Exception as e:
-        # 🔥 여기서 OpenAI 키/네트워크 문제면 전부 잡힘
         print("=== OpenAI error ===", repr(e))
         return Response(
-            {"error": "openai_error", "detail": str(e)},
+            {
+                "error": "openai_error",
+                "detail": str(e),
+            },
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
     msg = res.choices[0].message
 
-    # 3) json_object 모드면 여기서 이미 dict 로 받을 수 있는 경우가 있음
     if hasattr(msg, "parsed") and msg.parsed is not None:
         data = msg.parsed
     else:
-        # parsed 없으면 content를 그대로 돌려보자 (일단 파싱 안 함)
         data = {"raw": msg.content}
 
     print("=== OpenAI success ===", data)
 
     return Response(
-        {"from_openai": data},
+        {
+            "from_openai": data,
+            "template": template_id,
+        },
         status=status.HTTP_200_OK,
     )
+
 
 # =========================
 # Cloudinary Import (Templates / Memes)
