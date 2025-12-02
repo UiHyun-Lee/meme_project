@@ -207,3 +207,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Media settings
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+print("=== USING DATABASE ===", os.environ.get("DATABASE_URL"))
