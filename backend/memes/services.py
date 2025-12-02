@@ -97,6 +97,8 @@ from django.conf import settings
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
+import json
+
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     prompt = f"""
 You are an expert meme designer AI.
@@ -111,28 +113,32 @@ Your task:
 2. Generate between 7 and 10 meme design ideas.
 3. Each meme design must include one or more captions.
 4. Your response MUST be valid JSON only.
+5. For each caption:
+   - "position" must be one of: "top", "bottom", "center", "custom".
+   - "bold", "italic", "underline" and "shadow.enabled" must be boolean.
+   - "x", "y", "font_size", "stroke_width", "shadow.x_offset", "shadow.y_offset" and "shadow.blur" must be integers.
 
-Each caption must have this schema:
+Each caption must follow this example schema:
 
 {{
-  "text": "string",
-  "position": "top" | "bottom" | "center" | "custom",
-  "x": number,
-  "y": number,
-  "font_face": "string",
-  "font_size": number,
-  "color": "string",
-  "stroke_color": "string",
-  "stroke_width": number,
-  "bold": true | false,
-  "italic": true | false,
-  "underline": true | false,
+  "text": "Example caption text",
+  "position": "top",
+  "x": 120,
+  "y": 80,
+  "font_face": "Impact",
+  "font_size": 48,
+  "color": "white",
+  "stroke_color": "black",
+  "stroke_width": 3,
+  "bold": true,
+  "italic": false,
+  "underline": false,
   "shadow": {{
-      "enabled": true | false,
-      "x_offset": number,
-      "y_offset": number,
-      "color": "string",
-      "blur": number
+    "enabled": true,
+    "x_offset": 3,
+    "y_offset": 3,
+    "color": "black",
+    "blur": 2
   }}
 }}
 
@@ -180,14 +186,11 @@ Return ONLY JSON in exactly this format:
         print("OpenAI error:", repr(e))
         return {"error": f"openai_error: {str(e)}"}
 
-    # 🔥 여기서부터가 핵심: 직접 json.loads 하지 말고 parsed/dict 로 받기
     msg = response.choices[0].message
 
-    # 최신 openai 라이브러리는 .parsed 가 있음
     if hasattr(msg, "parsed") and msg.parsed is not None:
         return msg.parsed
 
-    # 혹시 parsed가 없으면(구버전 방어용) 그때만 json.loads 사용
     raw = msg.content
     try:
         return json.loads(raw)

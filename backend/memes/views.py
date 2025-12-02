@@ -492,66 +492,122 @@ from rest_framework.response import Response
 from rest_framework import status
 from openai import OpenAI
 from django.conf import settings
-
+from django.shortcuts import get_object_or_404
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 @api_view(["POST"])
 def generate_ai_meme(request):
+    """
+    Cloudinary 템플릿 이미지를 기반으로:
+    1) AI가 캡션 JSON 생성 (generate_ai_meme_design)
+    2) Pillow로 텍스트 합성 (apply_ai_text_to_image)
+    3) Cloudinary에 memes/ai/ 폴더로 업로드
+    4) Meme 모델에 저장 후 프론트에 반환
+    """
     template_id = request.data.get("template")
-    print("=== generate_ai_meme called, template_id:", template_id)
+    if not template_id:
+        return Response(
+            {"error": "template id required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    template = get_object_or_404(MemeTemplate, id=template_id)
+
+    # 카테고리 / 설명 / 이미지 URL 안전하게 추출
+    category_name = ""
+    if template.category:
+        category_name = template.category.name or ""
+
+    template_desc = template.description or ""
 
     try:
-        res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": 'Return a JSON object: {"ok": true, "msg": "hello"}'
-                }
-            ],
-            max_tokens=50,
-            response_format={"type": "json_object"},
-        )
-    except Exception as e:
-        print("=== OpenAI error ===", repr(e))
+        template_image_url = template.image.url  # CloudinaryField → 실제 이미지 URL
+    except Exception:
+        template_image_url = ""
+
+    if not template_image_url:
         return Response(
-            {
-                "error": "openai_error",
-                "detail": str(e),
-            },
+            {"error": "Template image URL missing"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # 🔹 1. AI에게 캡션 디자인 요청
+    design = generate_ai_meme_design(
+        category_name=category_name,
+        template_desc=template_desc,
+        template_url=template_image_url,
+    )
+
+    # OpenAI / JSON 파싱 에러 시 그대로 반환
+    if "error" in design:
+        return Response(design, status=status.HTTP_502_BAD_GATEWAY)
+
+    memes_data = design.get("memes") or []
+    if not memes_data:
+        return Response(
+            {"error": "No memes generated from AI"},
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    msg = res.choices[0].message
+    created_memes = []
 
-    # 1) 새 버전이면 parsed 지원
-    if hasattr(msg, "parsed") and msg.parsed is not None:
-        data = msg.parsed
-    else:
-        # 2) 아니면 content가 JSON 문자열이니까 우리가 직접 파싱
+    # 🔹 2. 각 meme_design에 대해 이미지 합성 + 업로드 + DB 저장
+    for meme_design in memes_data:
+        captions = meme_design.get("captions") or []
+        if not captions:
+            continue
+
+        # 2-1) Pillow로 텍스트 합성
         try:
-            data = json.loads(msg.content)
+            # apply_ai_text_to_image(기존 템플릿 이미지 URL, 캡션 리스트)
+            final_image = apply_ai_text_to_image(template_image_url, captions)
+            # final_image 가 PIL.Image 객체이거나, 업로드 가능한 파일-like object라고 가정
         except Exception as e:
-            print("JSON parse error:", e, msg.content)
-            return Response(
-                {
-                    "error": "json_parse_error",
-                    "detail": str(e),
-                    "raw": msg.content,
-                },
-                status=status.HTTP_502_BAD_GATEWAY,
+            print("apply_ai_text_to_image error:", repr(e))
+            continue  # 이 디자인만 스킵하고 다음으로
+
+        # 2-2) Cloudinary에 업로드
+        try:
+            upload_result = cloudinary.uploader.upload(
+                final_image,
+                folder="memes/ai/",
+                resource_type="image",
             )
+            # CloudinaryField에는 보통 public_id 를 저장하는 게 정석
+            public_id = upload_result.get("public_id")
+            secure_url = upload_result.get("secure_url")
+        except Exception as e:
+            print("Cloudinary upload error:", repr(e))
+            continue
 
-    print("=== OpenAI success ===", data)
+        if not public_id and not secure_url:
+            continue
 
-    return Response(
-        {
-            "from_openai": data,
-            "template": template_id,
-        },
-        status=status.HTTP_200_OK,
-    )
+        # 2-3) Meme DB 레코드 생성
+        try:
+            meme = Meme.objects.create(
+                template=template,
+                image=public_id or secure_url,  # CloudinaryField → public_id 저장 (없으면 URL)
+                caption="; ".join([str(c.get("text", "")) for c in captions]),
+                created_by="ai",
+                format="macro",              # 나중에 필요하면 template 기반으로 변경 가능
+                topic=category_name or None,
+            )
+            created_memes.append(meme)
+        except Exception as e:
+            print("Meme create error:", repr(e))
+            continue
+
+    if not created_memes:
+        return Response(
+            {"error": "Failed to create any AI memes"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # 🔹 3. 생성된 밈들 직렬화해서 반환
+    serializer = MemeSerializer(created_memes, many=True)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # =========================
