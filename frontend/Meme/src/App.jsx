@@ -43,12 +43,12 @@ function App() {
         ></div>
 
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-            <div className="sidebar-nav">
-                <Link to="/" onClick={closeSidebar}>Voting</Link>
-                <Link to="/leaderboard" onClick={closeSidebar}>Leaderboard</Link>
-                <Link to="/submit" onClick={closeSidebar}>Submit Meme</Link>
-                <Link to="/about" onClick={closeSidebar}>About</Link>
-            </div>
+          <div className="sidebar-nav">
+            <a href="/" onClick={closeSidebar}>Voting</a>
+            <a href="/leaderboard" onClick={closeSidebar}>Leaderboard</a>
+            <a href="/submit" onClick={closeSidebar}>Submit Meme</a>
+            <a href="/about" onClick={closeSidebar}>About</a>
+          </div>
         </div>
 
         <Routes>
