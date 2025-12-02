@@ -101,82 +101,42 @@ import json
 
 
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
+    """
+    AI한테 '캡션만' 여러 개 만들어달라고 요청.
+    JSON 포맷은 아주 단순: {"memes": [{"caption": "..."} , ...]}
+    """
     prompt = f"""
-You are an expert meme designer AI.
+You are an expert meme caption writer.
 
-You are given a real image (not generating new ones) with the following info:
+You are given information about an existing meme template image:
 - Category: {category_name}
 - Description: {template_desc}
 - Image URL: {template_url}
 
-Your task:
-1. Analyze the provided image.
-2. Generate between 7 and 10 meme design ideas.
-3. Each meme design must include one or more captions.
-4. Your response MUST be valid JSON only.
+Your job:
+1. Imagine how people would use this template to make memes.
+2. Create between 3 and 7 funny meme ideas.
+3. Each idea should be a short caption.
+4. Respond ONLY with valid JSON.
 
-Each caption must have this schema (this is an EXAMPLE, not something you should repeat literally):
-
-{{
-  "text": "Example caption text",
-  "position": "top",
-  "x": 120,
-  "y": 80,
-  "font_face": "Impact",
-  "font_size": 48,
-  "color": "white",
-  "stroke_color": "black",
-  "stroke_width": 3,
-  "bold": true,
-  "italic": false,
-  "underline": false,
-  "shadow": {{
-    "enabled": true,
-    "x_offset": 3,
-    "y_offset": 3,
-    "color": "black",
-    "blur": 2
-  }}
-}}
-
-Return ONLY JSON in exactly this format:
+The JSON MUST have exactly this structure:
 
 {{
   "memes": [
-    {{
-      "captions": [
-        {{
-          "text": "When you realize your exam is tomorrow",
-          "position": "top",
-          "x": 120,
-          "y": 80,
-          "font_face": "Impact",
-          "font_size": 48,
-          "color": "white",
-          "stroke_color": "black",
-          "stroke_width": 3,
-          "bold": true,
-          "italic": false,
-          "underline": false,
-          "shadow": {{
-            "enabled": true,
-            "x_offset": 3,
-            "y_offset": 3,
-            "color": "black",
-            "blur": 2
-          }}
-        }}
-      ]
-    }}
+    {{"caption": "first meme caption"}},
+    {{"caption": "second meme caption"}}
   ]
 }}
+
+Do NOT include any other fields. Do NOT include comments or explanations.
+Only return the JSON object.
 """
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=900,
+            max_tokens=300,  # 훨씬 줄여도 충분
             response_format={"type": "json_object"},
         )
     except Exception as e:
@@ -185,30 +145,20 @@ Return ONLY JSON in exactly this format:
 
     msg = response.choices[0].message
 
-    # 1) 최신 openai 라이브러리면 parsed가 있을 수 있음
+    # 새 버전이면 parsed에 바로 dict로 들어올 수 있음
     if hasattr(msg, "parsed") and msg.parsed is not None:
         return msg.parsed
 
+    # 구버전일 경우 content는 JSON 문자열
     raw = msg.content
-
-    # 2) 1차 시도: 그대로 파싱
     try:
         return json.loads(raw)
     except Exception as e:
-        print("JSON parse error (1st):", e)
-
-    # 3) 2차 시도: 잘못된 trailing comma (예: "},\n]" ) 제거 후 다시 파싱
-    cleaned = re.sub(r",(\s*[\]}])", r"\1", raw)  # 콤마 뒤에 바로 ] 또는 } 오면 콤마 제거
-
-    try:
-        return json.loads(cleaned)
-    except Exception as e2:
-        print("JSON parse error (2nd):", e2)
+        print("JSON parse error:", e)
         print("RAW FROM OPENAI:", raw[:600])
-        print("CLEANED:", cleaned[:600])
         return {
             "error": "json_parse_error",
-            "detail": str(e2),
+            "detail": str(e),
             "raw": raw[:600],
         }
 
