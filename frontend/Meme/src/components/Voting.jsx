@@ -257,6 +257,12 @@ const Voting = () => {
   localStorage.getItem("cookieConsent")
 );
 
+useEffect(() => {
+  console.log("MEMES FROM API:", memes)
+}, [memes])
+
+
+
   const handleAcceptCookies = () => {
   localStorage.setItem("cookieConsent", "all");
   setCookieConsent("all");
@@ -365,7 +371,7 @@ const Voting = () => {
               title="Click to vote"
             >
               <img
-                src={meme.image}
+                src={meme.image_url}
                 alt={`Meme ${index}`}
                 style={{
                   maxWidth: '350px',

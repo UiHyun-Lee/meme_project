@@ -81,6 +81,7 @@
 import React from "react";
 import axios from "axios";
 import { GoogleLogin } from "@react-oauth/google";
+import { googleLogin } from '../api'
 
 // JWT decode 직접 구현
 function decodeJwt(token) {
@@ -99,10 +100,7 @@ export default function LoginModal({ onClose, onSuccess }) {
   const handleGoogleSuccess = async (res) => {
     try {
       // 1) 서버 인증
-      const response = await axios.post(
-        "http://127.0.0.1:8000/auth/google/",
-        { id_token: res.credential }
-      );
+      const response = await googleLogin(res.credential)
 
       // 2) 토큰 디코드 (jwt-decode 없이)
       const userInfo = decodeJwt(res.credential);

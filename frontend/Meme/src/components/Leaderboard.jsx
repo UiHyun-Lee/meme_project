@@ -130,7 +130,7 @@ const Leaderboard = () => {
                 onClick={() => setSelectedMeme(meme)}
               >
                 <img
-                  src={meme.image}
+                  src={meme.image_url}
                   alt={`Top meme ${meme.id}`}
                   onError={(e) => e.target.src = 'https://via.placeholder.com/150/333/fff?text=Meme'}
                 />
