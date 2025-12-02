@@ -424,62 +424,66 @@ class MemeViewSet(viewsets.ModelViewSet):
 # AI Meme Generation
 # =========================
 
+# @api_view(["POST"])
+# def generate_ai_meme(request):
+#     """
+#     Cloudinary 템플릿 이미지를 기반으로:
+#     1) AI가 캡션 JSON 생성
+#     2) Pillow로 텍스트 합성
+#     3) Cloudinary에 memes/ai/ 폴더로 업로드
+#     4) DB 저장 후 프론트에 반환
+#     """
+#     template_id = request.data.get("template")
+#     if not template_id:
+#         return Response({"error": "template id required"}, status=400)
+#
+#     try:
+#         template = MemeTemplate.objects.get(id=template_id)
+#     except MemeTemplate.DoesNotExist:
+#         return Response({"error": "Template not found"}, status=404)
+#
+#     # AI 요청
+#     design = generate_ai_meme_design(
+#         category_name=template.category.name,
+#         template_desc=template.description or "",
+#         template_url=template.image.url,
+#     )
+#
+#     if "error" in design:
+#         return Response(design, status=500)
+#
+#     memes_data = design.get("memes", [])
+#     created_memes = []
+#
+#     for meme_design in memes_data:
+#         captions = meme_design.get("captions", [])
+#
+#         # 이미지 합성
+#         final_image = apply_ai_text_to_image(template.image.url, captions)
+#
+#         # Cloudinary 업로드
+#         upload_result = cloudinary.uploader.upload(
+#             final_image,
+#             folder="memes/ai/",
+#             resource_type="image",
+#         )
+#
+#         meme = Meme.objects.create(
+#             template=template,
+#             image=upload_result["secure_url"],
+#             caption="; ".join([c["text"] for c in captions]),
+#             created_by="ai",
+#             format="macro",
+#             topic=template.category.name,
+#         )
+#         created_memes.append(MemeSerializer(meme).data)
+#
+#     return Response(created_memes, status=status.HTTP_201_CREATED)
+
 @api_view(["POST"])
 def generate_ai_meme(request):
-    """
-    Cloudinary 템플릿 이미지를 기반으로:
-    1) AI가 캡션 JSON 생성
-    2) Pillow로 텍스트 합성
-    3) Cloudinary에 memes/ai/ 폴더로 업로드
-    4) DB 저장 후 프론트에 반환
-    """
-    template_id = request.data.get("template")
-    if not template_id:
-        return Response({"error": "template id required"}, status=400)
-
-    try:
-        template = MemeTemplate.objects.get(id=template_id)
-    except MemeTemplate.DoesNotExist:
-        return Response({"error": "Template not found"}, status=404)
-
-    # AI 요청
-    design = generate_ai_meme_design(
-        category_name=template.category.name,
-        template_desc=template.description or "",
-        template_url=template.image.url,
-    )
-
-    if "error" in design:
-        return Response(design, status=500)
-
-    memes_data = design.get("memes", [])
-    created_memes = []
-
-    for meme_design in memes_data:
-        captions = meme_design.get("captions", [])
-
-        # 이미지 합성
-        final_image = apply_ai_text_to_image(template.image.url, captions)
-
-        # Cloudinary 업로드
-        upload_result = cloudinary.uploader.upload(
-            final_image,
-            folder="memes/ai/",
-            resource_type="image",
-        )
-
-        meme = Meme.objects.create(
-            template=template,
-            image=upload_result["secure_url"],
-            caption="; ".join([c["text"] for c in captions]),
-            created_by="ai",
-            format="macro",
-            topic=template.category.name,
-        )
-        created_memes.append(MemeSerializer(meme).data)
-
-    return Response(created_memes, status=status.HTTP_201_CREATED)
-
+    print("=== generate_ai_meme was called ===")
+    return Response({"ok": True, "template": request.data.get("template")}, status=status.HTTP_200_OK)
 
 # =========================
 # Cloudinary Import (Templates / Memes)
