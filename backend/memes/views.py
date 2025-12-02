@@ -498,13 +498,6 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 @api_view(["POST"])
 def generate_ai_meme(request):
-    """
-    Cloudinary 템플릿 이미지를 기반으로:
-    1) AI가 캡션 JSON 생성 (generate_ai_meme_design)
-    2) Pillow로 텍스트 합성 (apply_ai_text_to_image)
-    3) Cloudinary에 memes/ai/ 폴더로 업로드
-    4) Meme 모델에 저장 후 프론트에 반환
-    """
     template_id = request.data.get("template")
     if not template_id:
         return Response(
@@ -514,33 +507,26 @@ def generate_ai_meme(request):
 
     template = get_object_or_404(MemeTemplate, id=template_id)
 
-    # 카테고리 / 설명 / 이미지 URL 안전하게 추출
-    category_name = ""
-    if template.category:
-        category_name = template.category.name or ""
-
+    category_name = template.category.name if template.category else ""
     template_desc = template.description or ""
 
     try:
-        template_image_url = template.image.url  # CloudinaryField → 실제 이미지 URL
+        template_image_url = template.image.url
     except Exception:
-        template_image_url = ""
-
-    if not template_image_url:
         return Response(
             {"error": "Template image URL missing"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # 🔹 1. AI에게 캡션 디자인 요청
+    # 1) AI에게 캡션 목록 요청
     design = generate_ai_meme_design(
         category_name=category_name,
         template_desc=template_desc,
         template_url=template_image_url,
     )
 
-    # OpenAI / JSON 파싱 에러 시 그대로 반환
     if "error" in design:
+        # OpenAI / JSON 에러
         return Response(design, status=status.HTTP_502_BAD_GATEWAY)
 
     memes_data = design.get("memes") or []
@@ -552,46 +538,30 @@ def generate_ai_meme(request):
 
     created_memes = []
 
-    # 🔹 2. 각 meme_design에 대해 이미지 합성 + 업로드 + DB 저장
-    for meme_design in memes_data:
-        captions = meme_design.get("captions") or []
-        if not captions:
+    for item in memes_data:
+        caption_text = item.get("caption")
+        if not caption_text:
             continue
 
-        # 2-1) Pillow로 텍스트 합성
+        # apply_ai_text_to_image에 맞게 caption 객체로 래핑
+        captions_for_image = [{
+            "text": caption_text,
+            "position": "bottom",  # 일단 전부 아래쪽에 표시
+        }]
+
         try:
-            # apply_ai_text_to_image(기존 템플릿 이미지 URL, 캡션 리스트)
-            final_image = apply_ai_text_to_image(template_image_url, captions)
-            # final_image 가 PIL.Image 객체이거나, 업로드 가능한 파일-like object라고 가정
+            public_id = apply_ai_text_to_image(template_image_url, captions_for_image)
         except Exception as e:
             print("apply_ai_text_to_image error:", repr(e))
-            continue  # 이 디자인만 스킵하고 다음으로
-
-        # 2-2) Cloudinary에 업로드
-        try:
-            upload_result = cloudinary.uploader.upload(
-                final_image,
-                folder="memes/ai/",
-                resource_type="image",
-            )
-            # CloudinaryField에는 보통 public_id 를 저장하는 게 정석
-            public_id = upload_result.get("public_id")
-            secure_url = upload_result.get("secure_url")
-        except Exception as e:
-            print("Cloudinary upload error:", repr(e))
             continue
 
-        if not public_id and not secure_url:
-            continue
-
-        # 2-3) Meme DB 레코드 생성
         try:
             meme = Meme.objects.create(
                 template=template,
-                image=public_id or secure_url,  # CloudinaryField → public_id 저장 (없으면 URL)
-                caption="; ".join([str(c.get("text", "")) for c in captions]),
+                image=public_id,          # CloudinaryField → public_id 저장
+                caption=caption_text,
                 created_by="ai",
-                format="macro",              # 나중에 필요하면 template 기반으로 변경 가능
+                format="macro",
                 topic=category_name or None,
             )
             created_memes.append(meme)
@@ -605,7 +575,6 @@ def generate_ai_meme(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # 🔹 3. 생성된 밈들 직렬화해서 반환
     serializer = MemeSerializer(created_memes, many=True)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
