@@ -262,8 +262,8 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     """
     템플릿 정보를 보고, AI가 캡션 + 스타일(위치, 폰트, 색, 그림자 등)을 설계해서
-    captions 배열을 JSON으로 돌려주는 함수.
-    JSON 포맷: { "captions": [ { ... }, ... ] }
+    captions 배열(항상 1개짜리)을 JSON으로 돌려줌.
+    JSON 포맷: { "captions": [ { ... } ] }
     """
 
     prompt = f"""
@@ -276,13 +276,13 @@ You are given an existing meme template image:
 
 Your job:
 - Imagine how humans would create memes with this template.
-- Create between 1 and 3 different captions for this template.
-- For each caption, you must also design the style (position, font, color, shadow, etc.).
+- Create EXACTLY ONE meme caption for this template.
+- For this single caption, you must also design the style (position, font, color, shadow, etc.).
 
 You MUST respond with a single JSON object with exactly one top-level key: "captions".
 
-The value of "captions" MUST be an array of caption objects.
-Each caption object MUST contain ALL of the following fields:
+The value of "captions" MUST be an array with exactly one caption object.
+That single caption object MUST contain ALL of the following fields:
 
 - text: string, the meme caption text
 - position: one of "top", "bottom", "center", "custom"
@@ -308,13 +308,14 @@ IMPORTANT RULES:
 - Do NOT include comments or explanations.
 - Do NOT wrap the JSON in backticks.
 - The response MUST be valid JSON.
+- The "captions" array MUST have exactly one element.
 """
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt.strip()}],
-            max_tokens=400,
+            max_tokens=600,  # 여유 충분히
             response_format={"type": "json_object"},
         )
     except Exception as e:
