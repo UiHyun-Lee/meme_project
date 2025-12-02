@@ -63,13 +63,13 @@ def generate_ai_meme_design(category_name: str, template_desc: str, template_url
               "bold": true,
               "italic": false,
               "underline": false,
-              "shadow": {
+              "shadow": {{
                 "enabled": true,
                 "x_offset": 3,
                 "y_offset": 3,
                 "color": "black",
                 "blur": 2
-              }
+              }}
             }}
           ]
         }}
