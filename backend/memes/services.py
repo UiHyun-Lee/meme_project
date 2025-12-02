@@ -99,6 +99,7 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 import json
 
+
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     prompt = f"""
 You are an expert meme designer AI.
@@ -113,12 +114,8 @@ Your task:
 2. Generate between 7 and 10 meme design ideas.
 3. Each meme design must include one or more captions.
 4. Your response MUST be valid JSON only.
-5. For each caption:
-   - "position" must be one of: "top", "bottom", "center", "custom".
-   - "bold", "italic", "underline" and "shadow.enabled" must be boolean.
-   - "x", "y", "font_size", "stroke_width", "shadow.x_offset", "shadow.y_offset" and "shadow.blur" must be integers.
 
-Each caption must follow this example schema:
+Each caption must have this schema (this is an EXAMPLE, not something you should repeat literally):
 
 {{
   "text": "Example caption text",
@@ -188,21 +185,32 @@ Return ONLY JSON in exactly this format:
 
     msg = response.choices[0].message
 
+    # 1) 최신 openai 라이브러리면 parsed가 있을 수 있음
     if hasattr(msg, "parsed") and msg.parsed is not None:
         return msg.parsed
 
     raw = msg.content
+
+    # 2) 1차 시도: 그대로 파싱
     try:
         return json.loads(raw)
     except Exception as e:
-        print("JSON parse error:", e)
+        print("JSON parse error (1st):", e)
+
+    # 3) 2차 시도: 잘못된 trailing comma (예: "},\n]" ) 제거 후 다시 파싱
+    cleaned = re.sub(r",(\s*[\]}])", r"\1", raw)  # 콤마 뒤에 바로 ] 또는 } 오면 콤마 제거
+
+    try:
+        return json.loads(cleaned)
+    except Exception as e2:
+        print("JSON parse error (2nd):", e2)
         print("RAW FROM OPENAI:", raw[:600])
+        print("CLEANED:", cleaned[:600])
         return {
             "error": "json_parse_error",
-            "detail": str(e),
+            "detail": str(e2),
             "raw": raw[:600],
         }
-
 
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
