@@ -518,7 +518,7 @@ def generate_ai_meme(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # 1) AI에게 캡션 목록 요청
+    # 1) AI에게 캡션 + 스타일 설계 요청
     design = generate_ai_meme_design(
         category_name=category_name,
         template_desc=template_desc,
@@ -526,56 +526,43 @@ def generate_ai_meme(request):
     )
 
     if "error" in design:
-        # OpenAI / JSON 에러
         return Response(design, status=status.HTTP_502_BAD_GATEWAY)
 
-    memes_data = design.get("memes") or []
-    if not memes_data:
+    captions = design.get("captions") or []
+    if not captions:
         return Response(
-            {"error": "No memes generated from AI"},
+            {"error": "No captions generated from AI"},
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    created_memes = []
-
-    for item in memes_data:
-        caption_text = item.get("caption")
-        if not caption_text:
-            continue
-
-        # apply_ai_text_to_image에 맞게 caption 객체로 래핑
-        captions_for_image = [{
-            "text": caption_text,
-            "position": "bottom",  # 일단 전부 아래쪽에 표시
-        }]
-
-        try:
-            public_id = apply_ai_text_to_image(template_image_url, captions_for_image)
-        except Exception as e:
-            print("apply_ai_text_to_image error:", repr(e))
-            continue
-
-        try:
-            meme = Meme.objects.create(
-                template=template,
-                image=public_id,          # CloudinaryField → public_id 저장
-                caption=caption_text,
-                created_by="ai",
-                format="macro",
-                topic=category_name or None,
-            )
-            created_memes.append(meme)
-        except Exception as e:
-            print("Meme create error:", repr(e))
-            continue
-
-    if not created_memes:
+    # 2) AI가 준 captions 그대로 넘겨서 이미지 합성
+    try:
+        public_id = apply_ai_text_to_image(template_image_url, captions)
+    except Exception as e:
+        print("apply_ai_text_to_image error:", repr(e))
         return Response(
-            {"error": "Failed to create any AI memes"},
+            {"error": "image_generation_failed", "detail": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    serializer = MemeSerializer(created_memes, many=True)
+    # 3) Meme DB 레코드 생성 (한 요청당 밈 1개)
+    try:
+        meme = Meme.objects.create(
+            template=template,
+            image=public_id,              # CloudinaryField → public_id 저장
+            caption="; ".join([str(c.get("text", "")) for c in captions]),
+            created_by="ai",
+            format="macro",
+            topic=category_name or None,
+        )
+    except Exception as e:
+        print("Meme create error:", repr(e))
+        return Response(
+            {"error": "db_create_failed", "detail": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    serializer = MemeSerializer(meme)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 

@@ -261,45 +261,60 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     """
-    AI한테 '캡션만' 여러 개 만들어달라고 요청.
-    JSON 포맷은 아주 단순: {"memes": [{"caption": "..."} , ...]}
+    템플릿 정보를 보고, AI가 캡션 + 스타일(위치, 폰트, 색, 그림자 등)을 설계해서
+    captions 배열을 JSON으로 돌려주는 함수.
+    JSON 포맷: { "captions": [ { ... }, ... ] }
     """
 
     prompt = f"""
-You are an expert meme caption writer.
+You are an expert meme designer AI.
 
-You are given a meme template image with:
+You are given an existing meme template image:
 - Category: {category_name}
 - Description: {template_desc}
 - Image URL: {template_url}
 
-Your task:
-- Create between 3 and 5 short, funny meme captions
-  that fit this template.
-- Do NOT describe the image, only write captions.
+Your job:
+- Imagine how humans would create memes with this template.
+- Create between 1 and 3 different captions for this template.
+- For each caption, you must also design the style (position, font, color, shadow, etc.).
 
-You MUST respond with ONLY this JSON structure:
+You MUST respond with a single JSON object with exactly one top-level key: "captions".
 
-{{
-  "memes": [
-    {{"caption": "first meme caption"}},
-    {{"caption": "second meme caption"}}
-  ]
-}}
+The value of "captions" MUST be an array of caption objects.
+Each caption object MUST contain ALL of the following fields:
 
-Rules:
-- Do NOT add any extra fields.
-- Do NOT add comments or explanations.
+- text: string, the meme caption text
+- position: one of "top", "bottom", "center", "custom"
+- x: integer (used only if position = "custom", otherwise you can still fill a sensible value)
+- y: integer (same rule as x)
+- font_face: string, e.g. "Impact", "Arial", "Comic Sans MS"
+- font_size: integer, e.g. between 32 and 96 depending on image size
+- color: string, a valid CSS color name or hex code like "#FFFFFF"
+- stroke_color: string, outline color, e.g. "black"
+- stroke_width: integer, e.g. 3 or 4
+- bold: boolean
+- italic: boolean
+- underline: boolean
+- shadow: object with the following fields:
+    - enabled: boolean
+    - x_offset: integer
+    - y_offset: integer
+    - color: string
+    - blur: integer
+
+IMPORTANT RULES:
+- Do NOT include any other top-level keys besides "captions".
+- Do NOT include comments or explanations.
 - Do NOT wrap the JSON in backticks.
-- The value of "memes" must be a non-empty array of objects.
-- Each object must have exactly one key: "caption".
+- The response MUST be valid JSON.
 """
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt.strip()}],
-            max_tokens=300,
+            max_tokens=400,
             response_format={"type": "json_object"},
         )
     except Exception as e:
@@ -308,10 +323,11 @@ Rules:
 
     msg = response.choices[0].message
 
-    # 최신 openai 라이브러리면 parsed에 바로 dict가 있을 수 있음
+    # 최신 openai 클라이언트: parsed가 있으면 그걸 그대로 dict로 사용
     if hasattr(msg, "parsed") and msg.parsed is not None:
         return msg.parsed
 
+    # fallback: content를 직접 파싱
     raw = msg.content
     try:
         return json.loads(raw)
