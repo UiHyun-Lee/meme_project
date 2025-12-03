@@ -17,7 +17,8 @@ body {
 .sidebar {
   position: fixed;
   top: 0;
-  left: -300px;
+  left: 0;                /* 항상 0으로 두고 */
+
   width: 260px;
   height: 100vh;
 
@@ -30,12 +31,15 @@ body {
   box-shadow: 4px 0 25px rgba(0, 0, 0, 0.25);
 
   padding: 24px;
-  transition: all 0.3s ease;
+
+  /* 핵심: 화면 밖으로 완전히 빼기 */
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
   z-index: 1000;
 }
 
 .sidebar.open {
-  left: 0;
+  transform: translateX(0);
 }
 
 /* ========================= */
