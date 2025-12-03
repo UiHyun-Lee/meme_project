@@ -248,6 +248,7 @@
 # memes/services.py
 
 import json
+import os
 from io import BytesIO
 
 import requests
@@ -262,8 +263,9 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
     """
     템플릿 정보를 보고, AI가 여러 개의 캡션 + 간단한 스타일을 설계해서
-    { "memes": [ { "caption", "position", "color", "emphasis" } ... ] } 를 반환.
+    { "memes": [ { "caption", "position", "color", "emphasis", "font_face" } ... ] } 를 반환.
     emphasis: "normal" | "bold" | "italic" | "bold_italic"
+    font_face: "impact" | "arial" | "comic_sans" | "helvetica" | "times"
     """
 
     prompt = f"""
@@ -281,7 +283,8 @@ Your job:
   - a short, funny caption,
   - where the text should be placed (top, bottom, or center),
   - what text color fits the image,
-  - whether the style should be normal, bold, italic, or bold_italic.
+  - whether the style should be normal, bold, italic, or bold_italic,
+  - which font family to use among a small set of options.
 
 You MUST respond with ONLY one JSON object with this structure:
 
@@ -291,13 +294,15 @@ You MUST respond with ONLY one JSON object with this structure:
       "caption": "first meme caption",
       "position": "top",
       "color": "white",
-      "emphasis": "bold"
+      "emphasis": "bold",
+      "font_face": "impact"
     }},
     {{
       "caption": "second meme caption",
       "position": "bottom",
       "color": "#FFFF00",
-      "emphasis": "normal"
+      "emphasis": "normal",
+      "font_face": "arial"
     }}
   ]
 }}
@@ -305,11 +310,13 @@ You MUST respond with ONLY one JSON object with this structure:
 Rules:
 - The top-level object MUST have exactly one key: "memes".
 - "memes" MUST be a non-empty array (2 to 5 elements).
-- Each element MUST have exactly four keys:
+- Each element MUST have exactly five keys:
   - "caption": string
   - "position": "top", "bottom", or "center"
   - "color": string (CSS color name or hex like "#FFFFFF")
   - "emphasis": "normal", "bold", "italic", or "bold_italic"
+  - "font_face": one of "impact", "arial", "comic_sans", "helvetica", or "times"
+- All values of "font_face" MUST be lowercase.
 - Do NOT include any other keys or comments.
 - Do NOT wrap the JSON in backticks.
 - The response MUST be valid JSON.
@@ -347,10 +354,10 @@ Rules:
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     """
-    템플릿 이미지 URL + 캡션 리스트를 받아서
-    Pillow로 텍스트 합성 후 Cloudinary에 업로드하고 public_id를 리턴.
-    captions: [{ "text": "...", "position": "bottom" }, ...]
+    template_url: 원본 템플릿 이미지 URL
+    captions: [ { "text", "position", "color", "bold?", "italic?", "font_face?" }, ... ]
     """
+
     resp = requests.get(template_url)
     resp.raise_for_status()
 
@@ -358,32 +365,58 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     draw = ImageDraw.Draw(image)
     W, H = image.size
 
+    # AI가 주는 font_face 문자열 → 실제 파일 이름 매핑
+    # 👉 너가 backend/fonts 폴더에 어떤 파일 넣었는지에 맞게 이름 맞춰줘야 함!
+    FONT_FILES = {
+        "impact": "Impact.ttf",
+        "arial": "Arial.ttf",
+        "comic_sans": "ComicSansMS.ttf",
+        "helvetica": "Helvetica.ttf",
+        "times": "TimesNewRoman.ttf",
+    }
+
     for cap in captions:
         text = cap.get("text", "")
         if not text:
             continue
 
-        font_size = cap.get("font_size", 40)
-        color = cap.get("color", "white")
-        stroke_color = cap.get("stroke_color", "black")
-        stroke_width = cap.get("stroke_width", 2)
+        # 1) 폰트 크기 (이미지 세로 기준 + 최소값)
+        font_size = cap.get("font_size")
+        if not font_size:
+            font_size = int(H * 0.10)  # 예: 1080px → 108px
+
+        if font_size < 48:
+            font_size = 48
+
+        # 2) AI가 고른 font_face → 파일 이름으로 변환
+        font_key = (cap.get("font_face") or "impact").lower().strip()
+        font_file = FONT_FILES.get(font_key, "Impact.ttf")
+
+        font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
 
         try:
-            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
-        except Exception:
+            font = ImageFont.truetype(font_path, font_size)
+        except Exception as e:
+            print(f"⚠ 폰트 로드 실패 ({font_path}) → 기본 폰트 사용:", e)
             font = ImageFont.load_default()
 
+        color = cap.get("color", "white")
+        stroke_color = cap.get("stroke_color", "black")
+        stroke_width = cap.get("stroke_width", 5)  # 테두리 조금 두껍게
+
+        # 위치 계산
         bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
         text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
         pos = cap.get("position", "bottom")
         if pos == "top":
-            x, y = (W - text_w) / 2, 30
+            x, y = (W - text_w) / 2, int(H * 0.05)
         elif pos == "center":
             x, y = (W - text_w) / 2, (H - text_h) / 2
-        else:  # bottom 기본
-            x, y = (W - text_w) / 2, H - text_h - 40
+        else:  # bottom
+            x, y = (W - text_w) / 2, H - text_h - int(H * 0.05)
 
+        # 텍스트 그리기
         draw.text(
             (x, y),
             text,
@@ -399,3 +432,4 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
     upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
     return upload_result["public_id"]
+

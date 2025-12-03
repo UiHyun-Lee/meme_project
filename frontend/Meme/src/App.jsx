@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import Voting from './components/Voting'
 import Leaderboard from './components/Leaderboard'
 import SubmitMeme from './components/SubmitMeme'
@@ -25,14 +25,15 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* Google Login Modal */}
         {showLogin && (
           <LoginModal
             onClose={() => setShowLogin(false)}
             onSuccess={() => setShowLogin(false)}
           />
         )}
-<Header />
+
+        <Header />
+
         <button className="menu-toggle" onClick={toggleSidebar}>
           <i className="fas fa-bars"></i>
         </button>
@@ -44,10 +45,11 @@ function App() {
 
         <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-nav">
-            <a href="/" onClick={closeSidebar}>Voting</a>
-            <a href="/leaderboard" onClick={closeSidebar}>Leaderboard</a>
-            <a href="/submit" onClick={closeSidebar}>Submit Meme</a>
-            <a href="/about" onClick={closeSidebar}>About</a>
+            <Link to="/" onClick={closeSidebar}>Voting</Link>
+            <Link to="/leaderboard" onClick={closeSidebar}>Leaderboard</Link>
+            <Link to="/submit" onClick={closeSidebar}>Submit Meme</Link>
+            <Link to="/about" onClick={closeSidebar}>About</Link>
+            {/* <Link to="/impressum" onClick={closeSidebar}>Impressum</Link> */}
           </div>
         </div>
 
