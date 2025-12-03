@@ -1003,7 +1003,7 @@ button:hover {
 @media (max-width: 768px) {
   .sidebar {
     width: 250px;
-    left: -250px;
+    left: 0;
   }
 
   .voting-container,
