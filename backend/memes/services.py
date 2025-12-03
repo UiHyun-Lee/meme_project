@@ -370,6 +370,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if not text:
             continue
 
+        # 1) 폰트 크기 (이미지 세로 기준 + 최소값)
         font_size = cap.get("font_size")
         if not font_size:
             font_size = int(H * 0.10)  # 예: 1080px → 108px
@@ -377,14 +378,16 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if font_size < 48:
             font_size = 48
 
+        # 2) AI가 고른 font_face → 파일 이름으로 변환
         font_key = (cap.get("font_face") or "impact").lower().strip()
-        font_file = FONT_FILES.get(font_key, "Monaco.ttf")
+        font_file = FONT_FILES.get(font_key, "Impact.ttf")
+
         font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
 
         try:
             font = ImageFont.truetype(font_path, font_size)
         except Exception as e:
-            print("Font load error:", e)
+            print(f"⚠ 폰트 로드 실패 ({font_path}) → 기본 폰트 사용:", e)
             font = ImageFont.load_default()
 
         color = cap.get("color", "white")
