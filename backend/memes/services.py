@@ -261,12 +261,6 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
-    """
-    템플릿 정보를 보고, AI가 여러 개의 캡션 + 간단한 스타일을 설계해서
-    { "memes": [ { "caption", "position", "color", "emphasis", "font_face" } ... ] } 를 반환.
-    emphasis: "normal" | "bold" | "italic" | "bold_italic"
-    font_face: "impact" | "arial" | "comic_sans" | "helvetica" | "times"
-    """
 
     prompt = f"""
 You are an expert meme designer AI.
@@ -315,7 +309,7 @@ Rules:
   - "position": "top", "bottom", or "center"
   - "color": string (CSS color name or hex like "#FFFFFF")
   - "emphasis": "normal", "bold", "italic", or "bold_italic"
-  - "font_face": one of "impact", "arial", "comic_sans", "helvetica", or "times"
+  - "font_face": one of "impact" or "arial"
 - All values of "font_face" MUST be lowercase.
 - Do NOT include any other keys or comments.
 - Do NOT wrap the JSON in backticks.
@@ -366,13 +360,9 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     W, H = image.size
 
     # AI가 주는 font_face 문자열 → 실제 파일 이름 매핑
-    # 👉 너가 backend/fonts 폴더에 어떤 파일 넣었는지에 맞게 이름 맞춰줘야 함!
     FONT_FILES = {
-        "impact": "Impact.ttf",
-        "arial": "Arial.ttf",
-        "comic_sans": "ComicSansMS.ttf",
-        "helvetica": "Helvetica.ttf",
-        "times": "TimesNewRoman.ttf",
+        "impact": "Monaco.ttf",
+        "arial": "Geneva.ttf",
     }
 
     for cap in captions:
@@ -380,7 +370,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if not text:
             continue
 
-        # 1) 폰트 크기 (이미지 세로 기준 + 최소값)
         font_size = cap.get("font_size")
         if not font_size:
             font_size = int(H * 0.10)  # 예: 1080px → 108px
@@ -388,16 +377,14 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if font_size < 48:
             font_size = 48
 
-        # 2) AI가 고른 font_face → 파일 이름으로 변환
         font_key = (cap.get("font_face") or "impact").lower().strip()
-        font_file = FONT_FILES.get(font_key, "Impact.ttf")
-
+        font_file = FONT_FILES.get(font_key, "Monaco.ttf")
         font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
 
         try:
             font = ImageFont.truetype(font_path, font_size)
         except Exception as e:
-            print(f"⚠ 폰트 로드 실패 ({font_path}) → 기본 폰트 사용:", e)
+            print("Font load error:", e)
             font = ImageFont.load_default()
 
         color = cap.get("color", "white")

@@ -486,7 +486,6 @@ class MemeViewSet(viewsets.ModelViewSet):
 #
 #     return Response(created_memes, status=status.HTTP_201_CREATED)
 
-import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -557,6 +556,7 @@ def generate_ai_meme(request):
             "color": color,
             "bold": bold,
             "italic": italic,
+
         }]
 
         try:
