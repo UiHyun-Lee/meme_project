@@ -16,8 +16,7 @@ body {
 .sidebar {
   position: fixed;
   top: 0;
-  left: 0;                /* 항상 0으로 두고 */
-
+  left: 0;
   width: 260px;
   height: 100vh;
 

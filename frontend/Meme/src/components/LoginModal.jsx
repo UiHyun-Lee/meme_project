@@ -83,7 +83,7 @@ import axios from "axios";
 import { GoogleLogin } from "@react-oauth/google";
 import { googleLogin } from '../api'
 
-// JWT decode 직접 구현
+// JWT decode
 function decodeJwt(token) {
   const base64Url = token.split(".")[1];
   const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -99,10 +99,10 @@ function decodeJwt(token) {
 export default function LoginModal({ onClose, onSuccess }) {
   const handleGoogleSuccess = async (res) => {
     try {
-      // 1) 서버 인증
+      // server aut
       const response = await googleLogin(res.credential)
 
-      // 2) 토큰 디코드 (jwt-decode 없이)
+      // token decode
       const userInfo = decodeJwt(res.credential);
 
       localStorage.setItem("accessToken", response.data.access);
@@ -135,7 +135,6 @@ export default function LoginModal({ onClose, onSuccess }) {
   );
 }
 
-// 🔥 style은 반드시 컴포넌트 아래에 정의해야 함
 const backdrop = {
   position: "fixed",
   inset: 0,

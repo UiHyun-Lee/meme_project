@@ -13,10 +13,6 @@ export async function ensureLogin() {
 }
 
 export const logout = () => {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userEmail");
-  localStorage.removeItem("userName");
-
-  window.location.reload();
+  localStorage.clear();
+  window.location.href = "/";
 };
