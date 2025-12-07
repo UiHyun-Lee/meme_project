@@ -1254,7 +1254,7 @@ button:hover {
   background-color: #002b5c; /* dark blue */
   text-align: center;
   color: #ffffff;
-
+  border-radius: 6px;
   position: relative;
   left: 0;
   right: 0;
