@@ -1367,11 +1367,13 @@ button:hover {
   }
 
   .vs-text {
-    font-size: 30px;
-    margin: 0 6px !important;
+    margin-left: 4% !important;
+    margin-right: 4% !important;
+    margin-top: 18% !important;
+    font-size: 5vw !important;
+    line-height: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
   }
 
   .slider-track {
