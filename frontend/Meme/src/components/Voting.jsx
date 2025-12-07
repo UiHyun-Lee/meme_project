@@ -1,16 +1,31 @@
 // import React, { useEffect, useState } from 'react'
 // import { getRandomMemes, voteMeme } from '../api'
+// import CookieBanner from "./CookieBanner";
 //
 // const Voting = () => {
 //   const [memes, setMemes] = useState([])
-//   const [selectedMeme, setSelectedMeme] = useState(null) // 클릭된 밈
 //   const [loading, setLoading] = useState(true)
 //   const [message, setMessage] = useState('')
-//   const [scores, setScores] = useState({
-//     humor_score: 3,
-//     creativity_score: 3,
-//     cultural_score: 3
-//   })
+//
+//   const [cookieConsent, setCookieConsent] = useState(
+//   localStorage.getItem("cookieConsent")
+// );
+//
+// useEffect(() => {
+//   console.log("MEMES FROM API:", memes)
+// }, [memes])
+//
+//
+//
+//   const handleAcceptCookies = () => {
+//   localStorage.setItem("cookieConsent", "all");
+//   setCookieConsent("all");
+// };
+//
+//   const handleRejectCookies = () => {
+//   localStorage.setItem("cookieConsent", "necessary");
+//   setCookieConsent("necessary");
+// };
 //
 //   useEffect(() => {
 //     fetchMemes()
@@ -22,7 +37,7 @@
 //       const res = await getRandomMemes()
 //       let memesData = res.data
 //
-//       // AI/Human 순서 무작위
+//       // randomly
 //       if (memesData.length === 2) {
 //         const [m1, m2] = memesData
 //         if (m1.created_by !== m2.created_by && Math.random() < 0.5) {
@@ -38,25 +53,25 @@
 //     }
 //   }
 //
-//   const submitVote = async () => {
-//     if (!selectedMeme) return
+//   const handleVote = async (memeId) => {
 //     try {
-//       await voteMeme(selectedMeme.id, scores)
-//       setMessage('Thank you for your vote! 🎉')
+//       await voteMeme(memeId)                // only count
+//       setMessage('Thanks! Your vote was counted.')
 //     } catch (err) {
-//       console.error('Vote error:', err)
+//       console.error('Vote error:', err.response?.data || err.message)
 //       setMessage('Vote failed 😢')
+//     } finally {
+//
+//       setTimeout(() => {
+//         setMessage('')
+//         fetchMemes()
+//       }, 800)
 //     }
-//     setSelectedMeme(null)
-//     setTimeout(() => {
-//       setMessage('')
-//       fetchMemes()
-//     }, 1500)
 //   }
 //
 //   const reportMeme = (memeId) => {
 //     console.log('Meme reported:', memeId)
-//     alert('Thanks for reporting it! We will investigate the meme.')
+//     alert('Thanks for reporting! We will check it.')
 //   }
 //
 //   if (loading) return <p>Loading memes...</p>
@@ -82,7 +97,7 @@
 //         This week's topic: <span style={{ color: '#fff176' }}>{memes[0]?.topic || 'unknown'}</span>
 //       </p>
 //
-//       {/* 밈 비교 */}
+//       {/* meme comparison */}
 //       <div
 //         className="meme-comparison"
 //         style={{
@@ -106,10 +121,11 @@
 //                 transition: 'transform 0.25s ease, box-shadow 0.25s ease',
 //                 cursor: 'pointer',
 //               }}
-//               onClick={() => setSelectedMeme(meme)} // 클릭 시 모달 열기
+//               onClick={() => handleVote(meme.id)}
+//               title="Click to vote"
 //             >
 //               <img
-//                 src={meme.image}
+//                 src={meme.image_url}
 //                 alt={`Meme ${index}`}
 //                 style={{
 //                   maxWidth: '350px',
@@ -118,6 +134,9 @@
 //                   borderRadius: '10px'
 //                 }}
 //               />
+// {/*               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9 }}> */}
+// {/*                 by <b>{meme.created_by.toUpperCase()}</b> • votes: {meme.total_votes ?? 0} */}
+// {/*               </div> */}
 //               <button
 //                 className="report-button"
 //                 onClick={(e) => {
@@ -134,110 +153,40 @@
 //         ))}
 //       </div>
 //
-//       {message && <div className="vote-feedback">{message}</div>}
+//       {message && <div className="vote-feedback" style={{ marginTop: 16 }}>{message}</div>}
 //
-//       {/* 점수 모달 */}
-//       {selectedMeme && (
-//         <div
-//           className="meme-modal"
-//           style={{
-//             position: 'fixed',
-//             top: 0, left: 0,
-//             width: '100%',
-//             height: '100%',
-//             background: 'rgba(0,0,0,0.7)',
-//             display: 'flex',
-//             justifyContent: 'center',
-//             alignItems: 'center',
-//             zIndex: 1000
-//           }}
-//           onClick={() => setSelectedMeme(null)}
-//         >
-//           <div
-//             className="meme-modal-content"
-//             onClick={(e) => e.stopPropagation()}
-//             style={{
-//               background: '#fff',
-//               padding: '20px',
-//               borderRadius: '15px',
-//               maxWidth: '400px',
-//               width: '90%',
-//               textAlign: 'center',
-//               color: '#333'
-//             }}
+//            {/* Footer */}
+//       {/* Footer */}
+//       <footer className="site-footer">
+//         <div className="footer-links">
+//           <a
+//             href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+//             target="_blank"
+//             rel="noopener noreferrer"
 //           >
-//             <img
-//               src={selectedMeme.image}
-//               alt="Selected meme"
-//               style={{ width: '100%', borderRadius: '10px', marginBottom: '10px' }}
-//             />
-//             <h3>Rate this Meme</h3>
-//
-//             <div style={{ marginTop: '10px' }}>
-//               <label>😂 Humor: {scores.humor_score}</label>
-//               <input
-//                 type="range"
-//                 min="1"
-//                 max="5"
-//                 value={scores.humor_score}
-//                 onChange={(e) => setScores({ ...scores, humor_score: parseInt(e.target.value) })}
-//               />
-//             </div>
-//
-//             <div style={{ marginTop: '10px' }}>
-//               <label>🎨 Creativity: {scores.creativity_score}</label>
-//               <input
-//                 type="range"
-//                 min="1"
-//                 max="5"
-//                 value={scores.creativity_score}
-//                 onChange={(e) => setScores({ ...scores, creativity_score: parseInt(e.target.value) })}
-//               />
-//             </div>
-//
-//             <div style={{ marginTop: '10px' }}>
-//               <label>🌍 Cultural Relevance: {scores.cultural_score}</label>
-//               <input
-//                 type="range"
-//                 min="1"
-//                 max="5"
-//                 value={scores.cultural_score}
-//                 onChange={(e) => setScores({ ...scores, cultural_score: parseInt(e.target.value) })}
-//               />
-//             </div>
-//
-//             <button
-//               onClick={submitVote}
-//               style={{
-//                 marginTop: '15px',
-//                 padding: '10px 20px',
-//                 borderRadius: '8px',
-//                 background: 'linear-gradient(135deg, #667eea, #764ba2)',
-//                 color: 'white',
-//                 fontWeight: 'bold',
-//                 cursor: 'pointer'
-//               }}
-//             >
-//               Submit Vote
-//             </button>
-//             <button
-//               onClick={() => setSelectedMeme(null)}
-//               style={{
-//                 marginTop: '15px',
-//                 padding: '10px 20px',
-//                 borderRadius: '8px',
-//                 background: 'red',
-//                 color: 'white',
-//                 fontWeight: 'bold',
-//                 cursor: 'pointer'
-//               }}
-//             >
-//               Cancel
-//             </button>
-//           </div>
+//             Impressum
+//           </a>
+//           <span className="footer-separator">|</span>
+//           <a
+//             href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+//             target="_blank"
+//             rel="noopener noreferrer"
+//           >
+//             Privacy Policy
+//           </a>
 //         </div>
+//       </footer>
+//
+//       {/* Cookie Banner (only if no consent yet) */}
+//       {!cookieConsent && (
+//         <CookieBanner
+//           onAccept={handleAcceptCookies}
+//           onReject={handleRejectCookies}
+//         />
 //       )}
 //     </div>
+//
+//
 //   )
 // }
 //
@@ -252,27 +201,27 @@ const Voting = () => {
   const [memes, setMemes] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
-
+  const [activeIndex, setActiveIndex] = useState(0)   // ⭐ 모바일 슬라이더용
   const [cookieConsent, setCookieConsent] = useState(
-  localStorage.getItem("cookieConsent")
-);
+    localStorage.getItem("cookieConsent")
+  );
 
-useEffect(() => {
-  console.log("MEMES FROM API:", memes)
-}, [memes])
-
-
+  // Debug log
+  useEffect(() => {
+    console.log("MEMES FROM API:", memes)
+  }, [memes])
 
   const handleAcceptCookies = () => {
-  localStorage.setItem("cookieConsent", "all");
-  setCookieConsent("all");
-};
+    localStorage.setItem("cookieConsent", "all");
+    setCookieConsent("all");
+  };
 
   const handleRejectCookies = () => {
-  localStorage.setItem("cookieConsent", "necessary");
-  setCookieConsent("necessary");
-};
+    localStorage.setItem("cookieConsent", "necessary");
+    setCookieConsent("necessary");
+  };
 
+  // ⭐ 최초 로딩 시 백엔드에서 밈 가져오기
   useEffect(() => {
     fetchMemes()
   }, [])
@@ -283,17 +232,19 @@ useEffect(() => {
       const res = await getRandomMemes()
       let memesData = res.data
 
-      // randomly
+      // ⭐ AI/Human 랜덤 순서 유지하기
       if (memesData.length === 2) {
         const [m1, m2] = memesData
         if (m1.created_by !== m2.created_by && Math.random() < 0.5) {
           memesData = [m2, m1]
         }
       }
+
       setMemes(memesData)
+      setActiveIndex(0)  // 모바일 슬라이더 첫 화면
     } catch (err) {
-      console.error('Voting fetch error:', err.response?.data || err.message)
-      setMessage('Not enough Memes now! 😢')
+      console.error("FETCH ERROR:", err.response?.data || err.message)
+      setMessage("Not enough Memes now! 😢")
     } finally {
       setLoading(false)
     }
@@ -301,13 +252,12 @@ useEffect(() => {
 
   const handleVote = async (memeId) => {
     try {
-      await voteMeme(memeId)                // only count
-      setMessage('Thanks! Your vote was counted.')
+      await voteMeme(memeId)
+      setMessage("Thanks! Your vote was counted.")
     } catch (err) {
-      console.error('Vote error:', err.response?.data || err.message)
-      setMessage('Vote failed 😢')
+      console.error("Vote error:", err)
+      setMessage("Vote failed 😢")
     } finally {
-
       setTimeout(() => {
         setMessage('')
         fetchMemes()
@@ -316,73 +266,45 @@ useEffect(() => {
   }
 
   const reportMeme = (memeId) => {
-    console.log('Meme reported:', memeId)
-    alert('Thanks for reporting! We will check it.')
+    alert("Thanks for reporting! We will check it.")
   }
 
   if (loading) return <p>Loading memes...</p>
-  if (memes.length < 2) return <p>{message || 'Not enough Memes now! 😢'}</p>
+  if (memes.length < 2) return <p>{message || "Not enough Memes now! 😢"}</p>
+
+  const lastIndex = memes.length - 1
 
   return (
     <div
       style={{
-        minHeight: '100vh',
-        width: '100vw',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        overflow: 'auto',
-        textAlign: 'center',
-        paddingBottom: '50px'
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #667eea, #764ba2)",
+        color: "white",
+        paddingBottom: "60px",
+        overflowX: "hidden",
+        textAlign: "center",
       }}
     >
+      {/* TOPIC */}
       <p className="topic-text">
-        This week's topic: <span style={{ color: '#fff176' }}>{memes[0]?.topic || 'unknown'}</span>
+        This week's topic:{" "}
+        <span style={{ color: "#fff176" }}>{memes[0]?.topic}</span>
       </p>
 
-      {/* meme comparison */}
-      <div
-        className="meme-comparison"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '60px',
-          flexWrap: 'wrap',
-          width: '100%',
-          maxWidth: '1300px'
-        }}
-      >
+      {/* ⭐ DESKTOP VERSION — ORIGINAL 2 memes side-by-side */}
+      <div className="desktop-meme-comparison meme-comparison">
         {memes.slice(0, 2).map((meme, index) => (
           <React.Fragment key={meme.id}>
-            <div
-              className="meme-card"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                borderRadius: '15px',
-                padding: '15px',
-                transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                cursor: 'pointer',
-              }}
-              onClick={() => handleVote(meme.id)}
-              title="Click to vote"
-            >
+            <div className="meme-card" onClick={() => handleVote(meme.id)}>
               <img
                 src={meme.image_url}
-                alt={`Meme ${index}`}
-                style={{
-                  maxWidth: '350px',
-                  maxHeight: '350px',
-                  objectFit: 'cover',
-                  borderRadius: '10px'
-                }}
+                alt={"Meme " + index}
+                style={{ maxWidth: 350, borderRadius: 12 }}
               />
-{/*               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9 }}> */}
-{/*                 by <b>{meme.created_by.toUpperCase()}</b> • votes: {meme.total_votes ?? 0} */}
-{/*               </div> */}
               <button
                 className="report-button"
                 onClick={(e) => {
@@ -399,31 +321,82 @@ useEffect(() => {
         ))}
       </div>
 
-      {message && <div className="vote-feedback" style={{ marginTop: 16 }}>{message}</div>}
+      {/* ⭐ MOBILE VERSION — SLIDER (from your test code) */}
+      <div className="mobile-meme-slider">
 
-           {/* Footer */}
-      {/* Footer */}
+        {/* LEFT ARROW */}
+        <button
+          className="slider-arrow slider-arrow-left"
+          onClick={() => setActiveIndex(prev => Math.max(0, prev - 1))}
+          style={{
+            opacity: activeIndex === 0 ? 0 : 1,
+            visibility: activeIndex === 0 ? "hidden" : "visible",
+          }}
+        >
+          ‹
+        </button>
+
+        <div className="slider-viewport">
+          <div
+            className="slider-track"
+            style={{ transform: `translateX(-${activeIndex * 70}%)` }}
+          >
+            {memes.map((meme, idx) => (
+              <div
+                key={meme.id}
+                className="meme-card slider-card"
+                onClick={() => handleVote(meme.id)}
+              >
+                <img
+                  src={meme.image_url}
+                  className="slider-image"
+                />
+                <button
+                  className="report-button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    reportMeme(meme.id)
+                  }}
+                >
+                  🚫 Melden
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT ARROW */}
+        <button
+          className="slider-arrow slider-arrow-right"
+          onClick={() => setActiveIndex(prev => Math.min(lastIndex, prev + 1))}
+          style={{
+            opacity: activeIndex === lastIndex ? 0 : 1,
+            visibility: activeIndex === lastIndex ? "hidden" : "visible",
+          }}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* FEEDBACK */}
+      {message && (
+        <div className="vote-feedback" style={{ marginTop: 16 }}>
+          {message}
+        </div>
+      )}
+
+      {/* FOOTER */}
       <footer className="site-footer">
         <div className="footer-links">
-          <a
-            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Impressum
-          </a>
+          <a href="https://www.tu-darmstadt.de/impressum/index.de.jsp" target="_blank">Impressum</a>
           <span className="footer-separator">|</span>
-          <a
-            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
+          <a href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp" target="_blank">
+            Privacy
           </a>
         </div>
       </footer>
 
-      {/* Cookie Banner (only if no consent yet) */}
+      {/* COOKIE BANNER */}
       {!cookieConsent && (
         <CookieBanner
           onAccept={handleAcceptCookies}
@@ -431,8 +404,6 @@ useEffect(() => {
         />
       )}
     </div>
-
-
   )
 }
 
