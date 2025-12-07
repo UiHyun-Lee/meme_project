@@ -1369,8 +1369,8 @@ button:hover {
   .vs-text {
     margin-left: 4% !important;
     margin-right: 4% !important;
-    margin-top: 18% !important;
-    font-size: 5vw !important;
+    margin-top: 40% !important;
+    font-size: 10vw !important;
     line-height: 1;
     display: flex;
     align-items: center;
