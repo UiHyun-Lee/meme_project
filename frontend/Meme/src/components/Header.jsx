@@ -15,6 +15,7 @@ export default function Header() {
         color: "white",
         borderBottom: "1px solid #333",
         borderRadius: "6px"
+        height: auto;
       }}
     >
       {/* LEFT SIDE */}
