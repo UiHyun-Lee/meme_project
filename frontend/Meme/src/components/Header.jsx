@@ -1,4 +1,4 @@
-import React from "react";
+mport React from "react";
 import ProfileHeader from "./ProfileHeader";
 
 export default function Header() {
@@ -18,12 +18,18 @@ export default function Header() {
       }}
     >
       {/* LEFT SIDE */}
-      <div style={{ fontSize: "20px", fontWeight: "bold" }}>Meme Battle</div>
+      <div
+        className="header-title"
+        style={{ fontSize: "20px", fontWeight: "bold" }}
+      >
+  Meme Battle
+</div>
 
       {/* RIGHT SIDE */}
       <div>
         {!isLoggedIn ? (
           <button
+            className="header-title"
             onClick={() => window.dispatchEvent(new Event("openGoogleLogin"))}
             style={{
               padding: "8px 16px",

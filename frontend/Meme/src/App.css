@@ -1,17 +1,18 @@
-
 .App {
   text-align: center;
   min-height: 100vh;
   color: white;
   position: relative;
   font-family: 'Poppins', sans-serif;
-
 }
 
 body {
   background: linear-gradient(135deg, #ff8c00 0%, #ffd27f 100%);
 }
 
+/* ========================= */
+/*          SIDEBAR          */
+/* ========================= */
 
 .sidebar {
   position: fixed;
@@ -20,7 +21,6 @@ body {
   width: 260px;
   height: 100vh;
 
-  /* Glass Effect Instead of Blue Gradient */
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
@@ -30,7 +30,6 @@ body {
 
   padding: 24px;
 
-  /* 핵심: 화면 밖으로 완전히 빼기 */
   transform: translateX(-100%);
   transition: transform 0.3s ease;
   z-index: 1000;
@@ -39,10 +38,6 @@ body {
 .sidebar.open {
   transform: translateX(0);
 }
-
-/* ========================= */
-/*       NAVIGATION LINKS    */
-/* ========================= */
 
 .sidebar-nav {
   display: flex;
@@ -54,48 +49,34 @@ body {
 .sidebar-nav a {
   display: block;
   padding: 14px 18px;
-
-  /* Subtle translucent button */
-  /* Subtle translucent button */
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(6px);
-
   color: #ffffff;
   text-decoration: none;
-
   border-radius: 12px;
   font-weight: 500;
   font-size: 1.05rem;
-
   transition: 0.25s ease;
 }
 
-/* High-end hover effect */
 .sidebar-nav a:hover {
-background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(10px);
-
   transform: translateX(8px);
 }
 
-
-/*menu toggle*/
 .menu-toggle {
   position: fixed;
   top: 5vh;
   left: 1vw;
-
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(5px);
-
   border: none;
   color: white;
-
   padding: 12px 15px;
   border-radius: 10px;
   font-size: 1.2rem;
   cursor: pointer;
-
   z-index: 1001;
   transition: 0.25s ease;
 }
@@ -105,22 +86,17 @@ background: rgba(255, 255, 255, 0.22);
   transform: scale(1.08);
 }
 
-
-/* overlay */
 .sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh;
-
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(5px);
-
   opacity: 0;
   visibility: hidden;
   transition: 0.3s ease;
-
   z-index: 999;
 }
 
@@ -129,12 +105,14 @@ background: rgba(255, 255, 255, 0.22);
   visibility: visible;
 }
 
-/* Entferne die alte Navigation */
 .main-nav {
   display: none;
 }
 
-/* Voting Component Styles */
+/* ========================= */
+/*          VOTING           */
+/* ========================= */
+
 .voting-container {
   margin: 20px auto;
   max-width: 95%;
@@ -146,6 +124,7 @@ background: rgba(255, 255, 255, 0.22);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
+/* Grundlayout der Meme-Vergleichsfläche */
 .meme-comparison {
   display: flex;
   justify-content: center;
@@ -181,7 +160,16 @@ background: rgba(255, 255, 255, 0.22);
   box-shadow: 0 0 20px rgba(65, 105, 225, 0.5);
 }
 
-/* Neue Stile für Voting */
+/* Desktop vs. Mobile Umschaltung */
+.desktop-meme-comparison {
+  display: flex;
+}
+
+.mobile-meme-slider {
+  display: none;
+}
+
+/* Topic */
 .topic-text {
   font-size: 1.8rem;
   font-weight: bold;
@@ -191,6 +179,7 @@ background: rgba(255, 255, 255, 0.22);
   text-align: center;
 }
 
+/* Bild-Container */
 .meme-image-container {
   position: relative;
   cursor: pointer;
@@ -202,6 +191,7 @@ background: rgba(255, 255, 255, 0.22);
   justify-content: center;
 }
 
+/* Hover Overlay */
 .vote-overlay {
   position: absolute;
   top: 0;
@@ -223,6 +213,7 @@ background: rgba(255, 255, 255, 0.22);
   opacity: 1;
 }
 
+/* VS Text */
 .vs-text {
   font-size: 2.5rem;
   font-weight: 800;
@@ -241,6 +232,7 @@ background: rgba(255, 255, 255, 0.22);
   60% { transform: translateY(-7px); }
 }
 
+/* Report Button */
 .report-button {
   margin-top: 10px;
   background: #FFD700 !important;
@@ -260,6 +252,7 @@ background: rgba(255, 255, 255, 0.22);
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
+/* Feedback */
 .vote-feedback {
   margin-top: 20px;
   padding: 15px;
@@ -279,6 +272,71 @@ background: rgba(255, 255, 255, 0.22);
   object-fit: contain;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
+
+/* ========================= */
+/*          SLIDER           */
+/* ========================= */
+
+.slider-viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.slider-track {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.slider-card {
+  flex: 0 0 85%;
+  max-width: 85%;
+  margin-right: 16px;
+  min-height: 0; /* überschreibt min-height der normalen meme-card für mobile */
+}
+
+.slider-image {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Pfeile als Overlay auf dem Meme */
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  z-index: 10;
+}
+
+.slider-arrow:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+
+.slider-arrow-left {
+  left: 8px;
+}
+
+.slider-arrow-right {
+  right: 8px;
+}
+
+/* ========================= */
+/*         LEADERBOARD       */
+/* ========================= */
 
 .voting-options {
   margin: 30px 0;
@@ -302,7 +360,6 @@ background: rgba(255, 255, 255, 0.22);
   color: white;
 }
 
-/* Leaderboard Styles */
 .leaderboard-container {
   margin: 20px auto;
   max-width: 95%;
@@ -315,7 +372,6 @@ background: rgba(255, 255, 255, 0.22);
   overflow: hidden;
 }
 
-/* Leaderboard Erweiterungen */
 .type-filters {
   margin: 20px 0;
   text-align: center;
@@ -354,7 +410,7 @@ background: rgba(255, 255, 255, 0.22);
   background-color: #646cff;
 }
 
-/* Responsive Table Styles */
+/* Tabelle */
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
@@ -374,7 +430,6 @@ background: rgba(255, 255, 255, 0.22);
   word-wrap: break-word;
 }
 
-/* Spezifische Spaltenbreiten für bessere Responsiveness */
 .leaderboard-table th:nth-child(1),
 .leaderboard-table td:nth-child(1) {
   width: 15%;
@@ -416,7 +471,7 @@ background: rgba(255, 255, 255, 0.22);
   background-color: rgba(205, 127, 50, 0.2);
 }
 
-/* Summary Cards mit besserem Kontrast */
+/* Summary Cards */
 .summary-card {
   background: linear-gradient(135deg, rgba(0, 47, 108, 0.8) 0%, rgba(0, 71, 171, 0.8) 100%);
   padding: 20px;
@@ -568,7 +623,10 @@ background: rgba(255, 255, 255, 0.22);
   color: #2196f3;
 }
 
-/* Submit Meme Styles */
+/* ========================= */
+/*        SUBMIT / EDITOR    */
+/* ========================= */
+
 .submit-container {
   margin: 20px auto;
   max-width: 95%;
@@ -659,7 +717,7 @@ background: rgba(255, 255, 255, 0.22);
   box-shadow: 0 0 15px rgba(30, 144, 255, 0.5);
 }
 
-/* Photo Editor Styles */
+/* Photo Editor */
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -724,7 +782,6 @@ background: rgba(255, 255, 255, 0.22);
   border-radius: 8px;
 }
 
-/* WICHTIG: Meme Text Styles - Border nur im Edit-Modus */
 .meme-text {
   position: absolute;
   font-weight: bold;
@@ -740,13 +797,11 @@ background: rgba(255, 255, 255, 0.22);
   white-space: nowrap;
   transition: transform 0.2s;
   cursor: move;
-  /* KEINE Border oder Background standardmäßig */
   border: none !important;
   background-color: transparent !important;
 }
 
 .meme-text.editing {
-  /* Nur wenn aktiv bearbeitet wird */
   border: 2px dashed #4f46e5 !important;
   background-color: rgba(79,70,229,0.1) !important;
 }
@@ -890,12 +945,14 @@ background: rgba(255, 255, 255, 0.22);
   font-size: 0.9em;
 }
 
-/* Text elements list is hidden */
 .text-elements-list {
   display: none;
 }
 
-/* About Styles */
+/* ========================= */
+/*           ABOUT           */
+/* ========================= */
+
 .about-container {
   margin: 20px auto;
   max-width: 95%;
@@ -910,13 +967,15 @@ background: rgba(255, 255, 255, 0.22);
   font-family: 'Poppins', sans-serif;
 }
 
-/* Tab Content für Leaderboard */
 .tab-content {
   margin-top: 20px;
   overflow: hidden;
 }
 
-/* Fröhliche, farbenfrohe Elemente */
+/* ========================= */
+/*       GLOBAL ELEMENTS     */
+/* ========================= */
+
 h2 {
   background: linear-gradient(45deg, #1E90FF, #00BFFF, #87CEFA, #4682B4, #0000CD);
   background-clip: text;
@@ -947,7 +1006,7 @@ button:hover {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
 }
 
-/* Modal Styles */
+/* Modal */
 .meme-modal {
   position: fixed;
   top: 0;
@@ -997,7 +1056,10 @@ button:hover {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* Responsive Design */
+/* ========================= */
+/*        RESPONSIVE         */
+/* ========================= */
+
 @media (max-width: 768px) {
   .sidebar {
     width: 250px;
@@ -1022,10 +1084,18 @@ button:hover {
     padding: 10px 12px;
   }
 
-  .meme-comparison {
-    flex-direction: column;
-    align-items: center;
-    gap: 30px;
+  /* Desktop-Layout ausblenden, Slider anzeigen */
+  .desktop-meme-comparison {
+    display: none;
+  }
+
+  /* Container für Mobile-Slider – jetzt Overlay, kein Flex mehr */
+  .mobile-meme-slider {
+    display: block;       /* kein Flex mehr */
+    position: relative;
+    width: 100%;
+    max-width: 480px;     /* mehr Platz für das Meme */
+    margin: 20px auto 0;
   }
 
   .meme-card {
@@ -1093,7 +1163,6 @@ button:hover {
     gap: 5px;
   }
 
-  /* Mobile Optimierung für Tabelle */
   .leaderboard-table {
     font-size: 0.8rem;
   }
@@ -1121,12 +1190,6 @@ button:hover {
   .leaderboard-table th:nth-child(4),
   .leaderboard-table td:nth-child(4) {
     width: 20%;
-  }
-
-  .user-cell {
-    flex-direction: column;
-    text-align: center;
-    gap: 5px;
   }
 
   .user-avatar {
@@ -1158,18 +1221,14 @@ button:hover {
   }
 }
 
-/* Für sehr große Bilder maximale Grenzen setzen */
 @media (min-width: 1200px) {
-  .meme-image-natural {
-    max-width: 600px;
-  }
-
+  .meme-image-natural,
   .meme-container img {
     max-width: 600px;
   }
 }
 
-/* Container weiter nach oben schieben */
+/* Voting-Container weiter nach oben */
 .voting-container {
   text-align: center;
   margin-bottom: 30px;
@@ -1180,82 +1239,24 @@ button:hover {
   margin-top: -40px;
 }
 
-/* Topic weiter unten */
+/* Topic Abstand */
 .topic-text {
   margin-top: 40px;
   font-size: 1.6rem;
   font-weight: 600;
 }
 
-/* Memes etwas dichter zusammen */
-.meme-comparison {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -10px;
-}
-
-.meme-card {
-  margin-bottom: 20px;
-  width: 95%;
-  max-width: 380px;
-  position: relative;
-}
-
-.meme-image-container {
-  position: relative;
-  cursor: pointer;
-}
-
-.meme-image-natural {
-  width: 100%;
-  border-radius: 10px;
-  display: block;
-}
-
-/* Vote Overlay */
-.vote-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.4);
-  opacity: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  font-size: 1.4rem;
-  font-weight: bold;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.meme-image-container:hover .vote-overlay {
-  opacity: 1;
-}
-
-/* Overlay Report Button */
-.report-button-overlay {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: #FFD700;
-  border: none;
-  border-radius: 50%;
-  padding: 6px;
-}
+/* Footer & Cookies */
 
 .site-footer {
   width: 100%;
   margin-top: 40px;
   padding: 20px 0;
-  background-color: #002b5c; /* dark blue */
+  background-color: #002b5c;
   text-align: center;
   color: #ffffff;
-  border-radius: 6px;
   position: relative;
+  border-radius: 8px;
   left: 0;
   right: 0;
 }
@@ -1286,7 +1287,7 @@ button:hover {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #002b5c; /* TU Darmstadt dark blue */
+  background: #002b5c;
   color: white;
   padding: 20px;
   z-index: 9999;
@@ -1343,3 +1344,18 @@ button:hover {
   50% {
     opacity: 0;
   }
+}
+
+/* Standard: Desktop / große Screens */
+.header-title {
+  margin-left: 7vw;   /* leicht nach rechts, aber nicht zu extrem */
+  margin-top: 6vh;
+}
+
+/* Mobile: bis 768px Breite */
+@media (max-width: 768px) {
+  .header-title {
+    margin-left: 15vw; /* dein Wunschwert für Mobile */
+    margin-top: 2vh;   /* dein Wunschwert für Mobile */
+  }
+}

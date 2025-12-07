@@ -245,34 +245,29 @@
 
 
 import React, { useEffect, useState } from 'react'
-import { getRandomMemes, voteMeme } from '../api'
+import {  getRandomMemes, voteMeme  } from '../api'  // backend bleibt auskommentiert
 import CookieBanner from "./CookieBanner";
 
+import meme1 from '../assets/meme1.jpg'
+import meme2 from '../assets/meme2.jpg'
+
 const Voting = () => {
-  const [memes, setMemes] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Lokale Memes für das Testing
+  const [memes, setMemes] = useState([
+    { id: 1, image_url: meme1, topic: 'damn', created_by: 'local1', total_votes: 0 },
+    { id: 2, image_url: meme2, topic: 'damn', created_by: 'local2', total_votes: 0 }
+  ])
+
+  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0) // für mobile Slider
 
   const [cookieConsent, setCookieConsent] = useState(
-  localStorage.getItem("cookieConsent")
-);
+    localStorage.getItem("cookieConsent")
+  );
 
-useEffect(() => {
-  console.log("MEMES FROM API:", memes)
-}, [memes])
-
-
-
-  const handleAcceptCookies = () => {
-  localStorage.setItem("cookieConsent", "all");
-  setCookieConsent("all");
-};
-
-  const handleRejectCookies = () => {
-  localStorage.setItem("cookieConsent", "necessary");
-  setCookieConsent("necessary");
-};
-
+  /*
+  // ORIGINAL BACKEND CODE !
   useEffect(() => {
     fetchMemes()
   }, [])
@@ -283,7 +278,6 @@ useEffect(() => {
       const res = await getRandomMemes()
       let memesData = res.data
 
-      // randomly
       if (memesData.length === 2) {
         const [m1, m2] = memesData
         if (m1.created_by !== m2.created_by && Math.random() < 0.5) {
@@ -298,91 +292,82 @@ useEffect(() => {
       setLoading(false)
     }
   }
+  */
+
+  const handleAcceptCookies = () => {
+    localStorage.setItem("cookieConsent", "all");
+    setCookieConsent("all");
+  };
+
+  const handleRejectCookies = () => {
+    localStorage.setItem("cookieConsent", "necessary");
+    setCookieConsent("necessary");
+  };
 
   const handleVote = async (memeId) => {
+    /*
     try {
-      await voteMeme(memeId)                // only count
+      await voteMeme(memeId)
       setMessage('Thanks! Your vote was counted.')
     } catch (err) {
       console.error('Vote error:', err.response?.data || err.message)
       setMessage('Vote failed 😢')
     } finally {
-
       setTimeout(() => {
         setMessage('')
         fetchMemes()
       }, 800)
     }
+    */
+
+    // lokale Simulation
+    console.log("Voted locally:", memeId)
+    setMessage("Thanks! Your vote was counted (local).")
+
+    setTimeout(() => setMessage(""), 800)
   }
 
   const reportMeme = (memeId) => {
-    console.log('Meme reported:', memeId)
-    alert('Thanks for reporting! We will check it.')
+    console.log("Reported meme:", memeId)
+    alert("Thanks, we will check the meme.")
   }
 
   if (loading) return <p>Loading memes...</p>
-  if (memes.length < 2) return <p>{message || 'Not enough Memes now! 😢'}</p>
+  if (memes.length < 2) return <p>{message || "Not enough memes! 😢"}</p>
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        width: '100vw',
+        width: '100%',
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
         alignItems: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
-        overflow: 'auto',
-        textAlign: 'center',
-        paddingBottom: '50px'
+        overflowX: 'hidden',
+        paddingBottom: '60px',
       }}
     >
       <p className="topic-text">
-        This week's topic: <span style={{ color: '#fff176' }}>{memes[0]?.topic || 'unknown'}</span>
+        This week's topic: <span style={{ color: '#fff176' }}>{memes[0]?.topic}</span>
       </p>
 
-      {/* meme comparison */}
-      <div
-        className="meme-comparison"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '60px',
-          flexWrap: 'wrap',
-          width: '100%',
-          maxWidth: '1300px'
-        }}
-      >
-        {memes.slice(0, 2).map((meme, index) => (
+      {/* DESKTOP VERSION – 2 Memes nebeneinander */}
+      <div className="desktop-meme-comparison meme-comparison">
+        {memes.map((meme, index) => (
           <React.Fragment key={meme.id}>
             <div
               className="meme-card"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                borderRadius: '15px',
-                padding: '15px',
-                transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                cursor: 'pointer',
-              }}
               onClick={() => handleVote(meme.id)}
-              title="Click to vote"
             >
               <img
                 src={meme.image_url}
-                alt={`Meme ${index}`}
-                style={{
-                  maxWidth: '350px',
-                  maxHeight: '350px',
-                  objectFit: 'cover',
-                  borderRadius: '10px'
-                }}
+                alt={"Meme " + index}
+                style={{ maxWidth: 350, borderRadius: 12 }}
               />
-{/*               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9 }}> */}
-{/*                 by <b>{meme.created_by.toUpperCase()}</b> • votes: {meme.total_votes ?? 0} */}
-{/*               </div> */}
+
               <button
                 className="report-button"
                 onClick={(e) => {
@@ -399,31 +384,74 @@ useEffect(() => {
         ))}
       </div>
 
-      {message && <div className="vote-feedback" style={{ marginTop: 16 }}>{message}</div>}
+      {/* MOBILE VERSION – Slider mit sichtbarem Rand des nächsten Memes */}
+      <div className="mobile-meme-slider">
+        {/* LEFT ARROW */}
+        <button
+                className="slider-arrow slider-arrow-left"
+                onClick={() => setActiveIndex(0)}
+                style={{
+                  opacity: activeIndex === 0 ? 0 : 1,
+                  visibility: activeIndex === 0 ? 'hidden' : 'visible',
+                  pointerEvents: activeIndex === 0 ? 'none' : 'auto',
+                }}
+        >
+          ‹
+        </button>
 
-           {/* Footer */}
-      {/* Footer */}
+
+        <div className="slider-viewport">
+          <div
+            className="slider-track"
+            style={{ transform: `translateX(-${activeIndex * 70}%)` }}
+          >
+            {memes.map((meme, index) => (
+              <div
+                key={meme.id}
+                className="meme-card slider-card"
+                onClick={() => handleVote(meme.id)}
+              >
+                <img src={meme.image_url} className="slider-image" />
+
+                <button
+                  className="report-button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    reportMeme(meme.id)
+                  }}
+                >
+                  🚫 Melden
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT ARROW */}
+        <button
+          className="slider-arrow slider-arrow-right"
+          onClick={() => setActiveIndex(1)}
+          style={{
+            opacity: activeIndex === 1 ? 0 : 1,
+            visibility: activeIndex === 1 ? 'hidden' : 'visible',
+            pointerEvents: activeIndex === 1 ? 'none' : 'auto',
+          }}
+        >
+          ›
+        </button>
+
+      </div>
+
+      {message && <div className="vote-feedback">{message}</div>}
+
       <footer className="site-footer">
         <div className="footer-links">
-          <a
-            href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Impressum
-          </a>
+          <a href="https://www.tu-darmstadt.de/impressum/index.de.jsp" target="_blank">Impressum</a>
           <span className="footer-separator">|</span>
-          <a
-            href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
+          <a href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp" target="_blank">Privacy</a>
         </div>
       </footer>
 
-      {/* Cookie Banner (only if no consent yet) */}
       {!cookieConsent && (
         <CookieBanner
           onAccept={handleAcceptCookies}
@@ -431,8 +459,6 @@ useEffect(() => {
         />
       )}
     </div>
-
-
   )
 }
 
