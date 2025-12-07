@@ -1,4 +1,4 @@
-mport React from "react";
+import React from "react";
 import ProfileHeader from "./ProfileHeader";
 
 export default function Header() {
