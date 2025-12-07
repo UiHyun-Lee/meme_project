@@ -336,33 +336,32 @@ const Voting = () => {
         </button>
 
         <div className="slider-viewport">
-          <div
-            className="slider-track"
-            style={{ transform: `translateX(-${activeIndex * 70}%)` }}
+          <div className="slider-track" style={{ transform: `translateX(-${activeIndex * 70}%)` }}>
+  {memes.map((meme, index) => {
+    return (
+      <React.Fragment key={meme.id}>
+        <div
+          className="meme-card slider-card"
+          onClick={() => handleVote(meme.id)}
+        >
+          <img src={meme.image_url} className="slider-image" />
+
+          <button
+            className="report-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              reportMeme(meme.id);
+            }}
           >
-            {memes.map((meme, idx) => (
-              <div
-                key={meme.id}
-                className="meme-card slider-card"
-                onClick={() => handleVote(meme.id)}
-              >
-                <img
-                  src={meme.image_url}
-                  className="slider-image"
-                />
-                <button
-                  className="report-button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    reportMeme(meme.id)
-                  }}
-                >
-                  🚫 Melden
-                </button>
-              </div>
-              {index === 0 && <div className="vs-text">VS</div>}
-            ))}
-          </div>
+            🚫 Melden
+          </button>
+        </div>
+
+        {index === 0 && <div className="vs-text">VS</div>}
+      </React.Fragment>
+    )
+  })}
+</div>
         </div>
 
         {/* RIGHT ARROW */}
