@@ -291,6 +291,22 @@ import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
 
+const WEEKLY_TOPICS = ["School", "Food", "Travel", "Sports"];
+
+function getCurrentTopic() {
+  const start = new Date("2025-12-07");
+  const now = new Date();
+
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const diffWeeks = Math.floor((now - start) / weekMs);
+
+  const idx = diffWeeks % WEEKLY_TOPICS.length;
+  return WEEKLY_TOPICS[idx];
+}
+
+const CURRENT_TOPIC = getCurrentTopic();
+
+
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
   const [uploadedUrl, setUploadedUrl] = useState(null)
@@ -352,13 +368,8 @@ const SubmitMeme = () => {
       form.append('caption', 'User created meme');
       form.append('created_by', 'human');
       form.append('template_id', selectedTemplate?.id);
-      form.append('topic', selectedTemplate?.category?.name || 'unknown');
       form.append('format', selectedTemplate?.description || 'macro');
-
-      const topicGuess =
-        selectedTemplate?.public_id?.split('/')?.pop()?.split('_')?.[0] ||
-        'unknown';
-      form.append('topic', topicGuess);
+      form.append('topic', CURRENT_TOPIC);
 
       const res = await uploadMeme(form);
       setUploadedUrl(res.data.image);
@@ -405,7 +416,7 @@ const SubmitMeme = () => {
         </p>
         <div className="submit-container">
           <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
-            This week's topic: <strong style={{ color: '#ffeb3b' }}>School</strong>
+            This week's topic: <strong style={{ color: '#ffeb3b' }}>{CURRENT_TOPIC}</strong>
           </p>
         </div>
       </div>
