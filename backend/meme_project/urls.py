@@ -93,24 +93,25 @@ router.register(r'templates', MemeTemplateViewSet)
 router.register(r'memes', MemeViewSet)
 router.register(r'evaluations', EvaluationViewSet)
 
+template_list = MemeTemplateViewSet.as_view({"get": "list"})
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # AI 생성
+    # AI generate
     path("api/generate_ai_meme/", generate_ai_meme),
 
     # Cloudinary import
     path('api/import-cloudinary/', import_cloudinary_data),
 
-    # 사용자 밈 업로드
+    # user meme upload
     path('api/user-memes/', UserMemeUploadView.as_view()),
 
-    # 랜덤 밈 / 투표 / 신고 / 리더보드
     path('api/memes/random/', random_memes),
     path('api/memes/vote/', vote_meme),
     path('api/memes/report/', report_meme),
     path('api/leaderboard/', leaderboard),
-
+    path('cloudinary-templates/', template_list, name='cloudinary-templates'),
     # Google Login
     path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
 

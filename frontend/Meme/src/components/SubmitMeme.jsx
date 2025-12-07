@@ -351,7 +351,7 @@ const SubmitMeme = () => {
       form.append('image_file', new File([blob], 'meme.jpg', { type: 'image/jpeg' }));
       form.append('caption', 'User created meme');
       form.append('created_by', 'human');
-      form.append('template_id', selectedTemplate?.public_id);
+      form.append('template_id', selectedTemplate?.id);
       form.append('topic', selectedTemplate?.category?.name || 'unknown');
       form.append('format', selectedTemplate?.description || 'macro');
 

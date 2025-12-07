@@ -512,19 +512,25 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   ]
 
   // Load Cloudinary templates
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const res = await getCloudTemplates()
-        setTemplates(res.data.templates || [])
-      } catch (err) {
-        console.error('Error loading templates:', err)
-      } finally {
-        setLoading(false)
-      }
+useEffect(() => {
+  const fetchTemplates = async () => {
+    try {
+      const res = await getCloudTemplates()
+      console.log("templates res.data =", res.data)
+
+      const data = Array.isArray(res.data)
+        ? res.data
+        : (res.data.results || res.data)
+
+      setTemplates(data || [])
+    } catch (err) {
+      console.error('Error loading templates:', err)
+    } finally {
+      setLoading(false)
     }
-    fetchTemplates()
-  }, [])
+  }
+  fetchTemplates()
+}, [])
 
   // Template select
   const handleTemplateSelect = (template) => {
@@ -730,32 +736,38 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
       <div style={{ marginBottom: 12 }}>
         <h4>Choose a template</h4>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {templates.map((t, i) => (
-            <div key={t.public_id} style={{ cursor: 'pointer', textAlign: 'center' }}>
-              <div
-                onClick={() => handleTemplateSelect(t)}
-                style={{
-                  width: 120,
-                  height: 80,
-                  overflow: 'hidden',
-                  borderRadius: 6,
-                  border: selectedTemplate?.public_id === t.public_id ? '3px solid #4f46e5' : '1px solid rgba(0,0,0,0.2)'
-                }}
-              >
-                <img
-                  src={t.url}
-                  alt={t.description || `Template ${i + 1}`}
-                  crossOrigin="anonymous"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
-                    {/*  Todo : template description should be shown or just number? */}
-              <div style={{ fontSize: 12, marginTop: 6 }}>
-                {t.description || `Template ${i + 1}`}
-              </div>
-
-            </div>
-          ))}
+{templates.map((t, i) => (
+  <div key={t.id} style={{ cursor: 'pointer', textAlign: 'center' }}>
+    <div
+      onClick={() => handleTemplateSelect(t)}
+      style={{
+        width: 120,
+        height: 80,
+        overflow: 'hidden',
+        borderRadius: 6,
+        border:
+          selectedTemplate?.id === t.id
+            ? '3px solid #4f46e5'
+            : '1px solid rgba(0,0,0,0.2)',
+      }}
+    >
+      <img
+        src={t.image_url}      // 🔥 여기가 핵심
+        alt={t.description || `Template ${i + 1}`}
+        crossOrigin="anonymous"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block'
+        }}
+      />
+    </div>
+    <div style={{ fontSize: 12, marginTop: 6 }}>
+      {t.description || `Template ${i + 1}`}
+    </div>
+  </div>
+))}
         </div>
       </div>
 
@@ -868,7 +880,7 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
               onTouchEnd={handleTouchEnd}
             >
               <img
-                src={selectedTemplate.url}
+                src={selectedTemplate.image_url}
                 alt="Selected"
                 crossOrigin="anonymous"
                 style={{
