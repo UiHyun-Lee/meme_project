@@ -290,7 +290,7 @@ import { uploadMeme } from '../api'
 import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
-+import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
