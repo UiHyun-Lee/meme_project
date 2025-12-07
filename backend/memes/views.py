@@ -493,8 +493,9 @@ from rest_framework import status
 from openai import OpenAI
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
+
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 @api_view(["POST"])
 def generate_ai_meme(request):
@@ -518,7 +519,7 @@ def generate_ai_meme(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # 1) AI에게 캡션 + 스타일 설계 요청
+    # 1) AI caption + style config
     design = generate_ai_meme_design(
         category_name=category_name,
         template_desc=template_desc,
@@ -535,7 +536,6 @@ def generate_ai_meme(request):
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    # 2) AI가 준 captions 그대로 넘겨서 이미지 합성
     try:
         public_id = apply_ai_text_to_image(template_image_url, captions)
     except Exception as e:
@@ -545,11 +545,10 @@ def generate_ai_meme(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # 3) Meme DB 레코드 생성 (한 요청당 밈 1개)
     try:
         meme = Meme.objects.create(
             template=template,
-            image=public_id,              # CloudinaryField → public_id 저장
+            image=public_id,              # CloudinaryField → public_id
             caption="; ".join([str(c.get("text", "")) for c in captions]),
             created_by="ai",
             format="macro",
@@ -565,10 +564,6 @@ def generate_ai_meme(request):
     serializer = MemeSerializer(meme)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-# =========================
-# Cloudinary Import (Templates / Memes)
-# =========================
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -655,11 +650,6 @@ def import_cloudinary_data(request):
         status=201,
     )
 
-
-# =========================
-# User Meme Upload
-# =========================
-
 class UserMemeUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -711,11 +701,6 @@ class UserMemeUploadView(APIView):
 
         return Response(MemeSerializer(meme).data, status=201)
 
-
-# =========================
-# Random Meme API (Voting)
-# =========================
-
 @api_view(["GET"])
 def random_memes(request):
     human_qs = Meme.objects.filter(created_by="human").exclude(image="")
@@ -729,11 +714,6 @@ def random_memes(request):
     selected_ai = random.choice(list(ai_qs))
 
     return Response(MemeSerializer([selected_human, selected_ai], many=True).data)
-
-
-# =========================
-# Voting / Reporting / Leaderboard
-# =========================
 
 @api_view(["POST"])
 def vote_meme(request):

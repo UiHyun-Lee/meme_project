@@ -290,6 +290,7 @@ import { uploadMeme } from '../api'
 import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
++import React, { useState, useEffect } from 'react'
 
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
@@ -300,9 +301,19 @@ const SubmitMeme = () => {
     !!localStorage.getItem("accessToken")
   );
 
-  // Start Meme Editor 버튼 눌렀을 때 → ensureLogin만 사용
+  useEffect(() => {
+    const handleLoginSuccess = () => {
+      setIsLoggedIn(!!localStorage.getItem("accessToken"));
+    };
+
+    window.addEventListener("googleLoginSuccess", handleLoginSuccess);
+    return () => {
+      window.removeEventListener("googleLoginSuccess", handleLoginSuccess);
+    };
+  }, []);
+
   const handleStartEditor = async () => {
-    const ok = await ensureLogin();      // ❗ 여기서 토큰 없으면 openGoogleLogin 이벤트 날림
+    const ok = await ensureLogin();
     if (ok) {
       setIsLoggedIn(true);
     }

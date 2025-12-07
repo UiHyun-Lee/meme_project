@@ -110,6 +110,8 @@ export default function LoginModal({ onClose, onSuccess }) {
       localStorage.setItem("userEmail", userInfo.email);
       localStorage.setItem("userName", userInfo.name);
 
+      window.dispatchEvent(new Event("googleLoginSuccess"));
+
       onSuccess();
     } catch (err) {
       console.error("Google login error:", err);

@@ -347,11 +347,6 @@ Rules:
 
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
-    """
-    template_url: 원본 템플릿 이미지 URL
-    captions: [ { "text", "position", "color", "bold?", "italic?", "font_face?" }, ... ]
-    """
-
     resp = requests.get(template_url)
     resp.raise_for_status()
 
@@ -359,7 +354,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     draw = ImageDraw.Draw(image)
     W, H = image.size
 
-    # AI가 주는 font_face 문자열 → 실제 파일 이름 매핑
     FONT_FILES = {
         "impact": "Monaco.ttf",
         "arial": "Geneva.ttf",
