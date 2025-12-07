@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import Voting from './components/Voting'
 import Leaderboard from './components/Leaderboard'
 import SubmitMeme from './components/SubmitMeme'
@@ -49,7 +49,6 @@ function App() {
             <Link to="/leaderboard" onClick={closeSidebar}>Leaderboard</Link>
             <Link to="/submit" onClick={closeSidebar}>Submit Meme</Link>
             <Link to="/about" onClick={closeSidebar}>About</Link>
-            {/* <Link to="/impressum" onClick={closeSidebar}>Impressum</Link> */}
           </div>
         </div>
 
