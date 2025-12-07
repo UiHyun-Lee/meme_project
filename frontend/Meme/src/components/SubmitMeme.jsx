@@ -291,7 +291,7 @@ import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
 
-const WEEKLY_TOPICS = ["School", "Food", "Travel", "Sports"];
+const WEEKLY_TOPICS = ["School!", "Food!", "Travel!", "Sports!"];
 
 function getCurrentTopic() {
   const start = new Date("2025-12-07");
