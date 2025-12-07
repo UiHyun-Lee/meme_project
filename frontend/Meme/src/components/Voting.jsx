@@ -323,7 +323,7 @@ const Voting = () => {
 
       {/* ⭐ MOBILE VERSION — SLIDER (from your test code) */}
       <div className="mobile-meme-slider">
-
+          <div className="mobile-vs-text">VS</div>
         {/* LEFT ARROW */}
         <button
           className="slider-arrow slider-arrow-left"
