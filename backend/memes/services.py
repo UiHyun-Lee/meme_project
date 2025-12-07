@@ -245,6 +245,189 @@
 
 
 
+
+
+
+
+
+# # memes/services.py
+#
+# import json
+# import os
+# from io import BytesIO
+#
+# import requests
+# from PIL import Image, ImageDraw, ImageFont
+# import cloudinary.uploader
+# from openai import OpenAI
+# from django.conf import settings
+#
+# client = OpenAI(api_key=settings.OPENAI_API_KEY)
+#
+#
+# def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
+#
+#     prompt = f"""
+# You are an expert meme designer AI.
+#
+# You are given an existing meme template image:
+# - Category: {category_name}
+# - Description: {template_desc}
+# - Image URL: {template_url}
+#
+# Your job:
+# - Imagine how humans would create memes with this template.
+# - Create between 2 and 5 different meme ideas.
+# - For each meme, decide:
+#   - a short, funny caption,
+#   - where the text should be placed (top, bottom, or center),
+#   - what text color fits the image,
+#   - whether the style should be normal, bold, italic, or bold_italic,
+#   - which font family to use among a small set of options.
+#
+# You MUST respond with ONLY one JSON object with this structure:
+#
+# {{
+#   "memes": [
+#     {{
+#       "caption": "first meme caption",
+#       "position": "top",
+#       "color": "white",
+#       "emphasis": "bold",
+#       "font_face": "impact"
+#     }},
+#     {{
+#       "caption": "second meme caption",
+#       "position": "bottom",
+#       "color": "#FFFF00",
+#       "emphasis": "normal",
+#       "font_face": "arial"
+#     }}
+#   ]
+# }}
+#
+# Rules:
+# - The top-level object MUST have exactly one key: "memes".
+# - "memes" MUST be a non-empty array (2 to 5 elements).
+# - Each element MUST have exactly five keys:
+#   - "caption": string
+#   - "position": "top", "bottom", or "center"
+#   - "color": string (CSS color name or hex like "#FFFFFF")
+#   - "emphasis": "normal", "bold", "italic", or "bold_italic"
+#   - "font_face": one of "impact" or "arial"
+# - All values of "font_face" MUST be lowercase.
+# - Do NOT include any other keys or comments.
+# - Do NOT wrap the JSON in backticks.
+# - The response MUST be valid JSON.
+# """
+#
+#     try:
+#         response = client.chat.completions.create(
+#             model="gpt-4o-mini",
+#             messages=[{"role": "user", "content": prompt.strip()}],
+#             max_tokens=300,
+#             response_format={"type": "json_object"},
+#         )
+#     except Exception as e:
+#         print("OpenAI error:", repr(e))
+#         return {"error": f"openai_error: {str(e)}"}
+#
+#     msg = response.choices[0].message
+#
+#     if hasattr(msg, "parsed") and msg.parsed is not None:
+#         return msg.parsed
+#
+#     raw = msg.content
+#     try:
+#         return json.loads(raw)
+#     except Exception as e:
+#         print("JSON parse error:", e)
+#         print("RAW FROM OPENAI:", raw[:600])
+#         return {
+#             "error": "json_parse_error",
+#             "detail": str(e),
+#             "raw": raw[:600],
+#         }
+#
+#
+#
+# def apply_ai_text_to_image(template_url: str, captions: list) -> str:
+#     resp = requests.get(template_url)
+#     resp.raise_for_status()
+#
+#     image = Image.open(BytesIO(resp.content)).convert("RGB")
+#     draw = ImageDraw.Draw(image)
+#     W, H = image.size
+#
+#     FONT_FILES = {
+#         "impact": "Monaco.ttf",
+#         "arial": "Geneva.ttf",
+#     }
+#
+#     for cap in captions:
+#         text = cap.get("text", "")
+#         if not text:
+#             continue
+#
+#         # 1) 폰트 크기 (이미지 세로 기준 + 최소값)
+#         font_size = cap.get("font_size")
+#         if not font_size:
+#             font_size = int(H * 0.10)  # 예: 1080px → 108px
+#
+#         if font_size < 48:
+#             font_size = 48
+#
+#         # 2) AI가 고른 font_face → 파일 이름으로 변환
+#         font_key = (cap.get("font_face") or "impact").lower().strip()
+#         font_file = FONT_FILES.get(font_key, "Impact.ttf")
+#
+#         font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
+#
+#         try:
+#             font = ImageFont.truetype(font_path, font_size)
+#         except Exception as e:
+#             print(f"⚠ 폰트 로드 실패 ({font_path}) → 기본 폰트 사용:", e)
+#             font = ImageFont.load_default()
+#
+#         color = cap.get("color", "white")
+#         stroke_color = cap.get("stroke_color", "black")
+#         stroke_width = cap.get("stroke_width", 5)  # 테두리 조금 두껍게
+#
+#         # 위치 계산
+#         bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
+#         text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+#
+#         pos = cap.get("position", "bottom")
+#         if pos == "top":
+#             x, y = (W - text_w) / 2, int(H * 0.05)
+#         elif pos == "center":
+#             x, y = (W - text_w) / 2, (H - text_h) / 2
+#         else:  # bottom
+#             x, y = (W - text_w) / 2, H - text_h - int(H * 0.05)
+#
+#         # 텍스트 그리기
+#         draw.text(
+#             (x, y),
+#             text,
+#             font=font,
+#             fill=color,
+#             stroke_width=stroke_width,
+#             stroke_fill=stroke_color,
+#         )
+#
+#     buffer = BytesIO()
+#     image.save(buffer, format="PNG")
+#     buffer.seek(0)
+#
+#     upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
+#     return upload_result["public_id"]
+#
+
+
+
+
+
+
 # memes/services.py
 
 import json
@@ -260,10 +443,18 @@ from django.conf import settings
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
-def generate_ai_meme_design(category_name: str, template_desc: str, template_url: str) -> dict:
+def generate_ai_meme_design(
+    topic: str,
+    category_name: str,
+    template_desc: str,
+    template_url: str,
+) -> dict:
 
     prompt = f"""
 You are an expert meme designer AI.
+
+This week’s global meme TOPIC is:
+- Topic: "{topic}"
 
 You are given an existing meme template image:
 - Category: {category_name}
@@ -271,7 +462,8 @@ You are given an existing meme template image:
 - Image URL: {template_url}
 
 Your job:
-- Imagine how humans would create memes with this template.
+- Create memes that clearly relate to the given TOPIC.
+- Imagine how humans would create memes with this template for that topic.
 - Create between 2 and 5 different meme ideas.
 - For each meme, decide:
   - a short, funny caption,
@@ -302,6 +494,7 @@ You MUST respond with ONLY one JSON object with this structure:
 }}
 
 Rules:
+- All captions MUST be about the given TOPIC: "{topic}".
 - The top-level object MUST have exactly one key: "memes".
 - "memes" MUST be a non-empty array (2 to 5 elements).
 - Each element MUST have exactly five keys:
@@ -330,20 +523,43 @@ Rules:
     msg = response.choices[0].message
 
     if hasattr(msg, "parsed") and msg.parsed is not None:
-        return msg.parsed
+        raw_data = msg.parsed
+    else:
+        raw = msg.content
+        try:
+            raw_data = json.loads(raw)
+        except Exception as e:
+            print("JSON parse error:", e)
+            print("RAW FROM OPENAI:", raw[:600])
+            return {
+                "error": "json_parse_error",
+                "detail": str(e),
+                "raw": raw[:600],
+            }
 
-    raw = msg.content
-    try:
-        return json.loads(raw)
-    except Exception as e:
-        print("JSON parse error:", e)
-        print("RAW FROM OPENAI:", raw[:600])
-        return {
-            "error": "json_parse_error",
-            "detail": str(e),
-            "raw": raw[:600],
-        }
+    memes = raw_data.get("memes", []) or []
+    if not isinstance(memes, list):
+        return {"error": "invalid_response", "detail": "'memes' is not a list"}
 
+    captions = []
+    for m in memes:
+        if not isinstance(m, dict):
+            continue
+
+        text = m.get("caption", "") or ""
+        if not text.strip():
+            continue
+
+        captions.append(
+            {
+                "text": text,
+                "position": m.get("position", "bottom"),
+                "color": m.get("color", "white"),
+                "font_face": (m.get("font_face") or "impact").lower().strip(),
+            }
+        )
+
+    return {"captions": captions}
 
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
@@ -364,15 +580,13 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if not text:
             continue
 
-        # 1) 폰트 크기 (이미지 세로 기준 + 최소값)
         font_size = cap.get("font_size")
         if not font_size:
-            font_size = int(H * 0.10)  # 예: 1080px → 108px
+            font_size = int(H * 0.10)
 
         if font_size < 48:
             font_size = 48
 
-        # 2) AI가 고른 font_face → 파일 이름으로 변환
         font_key = (cap.get("font_face") or "impact").lower().strip()
         font_file = FONT_FILES.get(font_key, "Impact.ttf")
 
@@ -386,9 +600,8 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
         color = cap.get("color", "white")
         stroke_color = cap.get("stroke_color", "black")
-        stroke_width = cap.get("stroke_width", 5)  # 테두리 조금 두껍게
+        stroke_width = cap.get("stroke_width", 5)
 
-        # 위치 계산
         bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
         text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
@@ -400,7 +613,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         else:  # bottom
             x, y = (W - text_w) / 2, H - text_h - int(H * 0.05)
 
-        # 텍스트 그리기
         draw.text(
             (x, y),
             text,
@@ -416,4 +628,3 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
     upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
     return upload_result["public_id"]
-

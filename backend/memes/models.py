@@ -39,6 +39,7 @@
 
 from django.db import models
 from cloudinary.models import CloudinaryField
+from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=500, unique=True)
@@ -80,3 +81,28 @@ class Meme(models.Model):
     def __str__(self):
         return f"Meme {self.id} from {self.template.category.name if self.template else 'no template'}"
 
+
+class WeeklyTopic(models.Model):
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-start_date"]
+
+    def __str__(self):
+        return f"{self.name} ({self.start_date} ~ {self.end_date})"
+
+    @classmethod
+    def get_current_topic(cls):
+        today = timezone.now().date()
+        return (
+            cls.objects.filter(
+                is_active=True,
+                start_date__lte=today,
+                end_date__gte=today,
+            )
+            .order_by("-start_date")
+            .first()
+        )

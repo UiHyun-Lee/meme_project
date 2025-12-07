@@ -207,39 +207,25 @@
 
 from rest_framework import serializers
 from evaluations.serializers import EvaluationSerializer
-from cloudinary.utils import cloudinary_url   # ✅ 추가
+from cloudinary.utils import cloudinary_url
 from .models import Category, MemeTemplate, Meme
 
 
-# -------------------------
-# Mixins
-# -------------------------
 class ImageURLMixin:
     def _build_image_url(self, obj):
-        """
-        Meme / MemeTemplate 의 image 필드가
-        - 이미 https://... 풀 URL 이든
-        - Cloudinary public_id (예: "memes/ai/xxxx") 이든
-        항상 최종적으로 쓸 수 있는 URL 로 바꿔서 리턴.
-        """
+
         image = getattr(obj, "image", None)
         if not image:
             return None
 
         value = str(image)
 
-        # 이미 완전한 URL이면 그대로 사용
         if value.startswith("http://") or value.startswith("https://"):
             return value
 
-        # 나머지는 Cloudinary public_id 로 보고 URL 생성
         url, _ = cloudinary_url(value)
         return url
 
-
-# -------------------------
-# Meme Minimal Serializer
-# -------------------------
 class MemeMinimalSerializer(serializers.ModelSerializer, ImageURLMixin):
     image_url = serializers.SerializerMethodField()
 
@@ -259,11 +245,7 @@ class MemeMinimalSerializer(serializers.ModelSerializer, ImageURLMixin):
         return self._build_image_url(obj)
 
 
-# -------------------------
-# Meme Full Serializer
-# -------------------------
 class MemeSerializer(serializers.ModelSerializer, ImageURLMixin):
-    # ✅ 프론트에서 entry.image 써도 항상 URL 나오게
     image = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     evaluations = EvaluationSerializer(many=True, read_only=True)
@@ -273,17 +255,12 @@ class MemeSerializer(serializers.ModelSerializer, ImageURLMixin):
         fields = "__all__"
 
     def get_image(self, obj):
-        # /api/leaderboard 의 "image" 필드
         return self._build_image_url(obj)
 
     def get_image_url(self, obj):
-        # 혹시 다른 곳에서 image_url 쓰는 경우 호환용
         return self._build_image_url(obj)
 
 
-# -------------------------
-# Meme Template Serializer
-# -------------------------
 class MemeTemplateSerializer(serializers.ModelSerializer, ImageURLMixin):
     image_url = serializers.SerializerMethodField()
     memes = MemeMinimalSerializer(many=True, read_only=True)
@@ -296,9 +273,6 @@ class MemeTemplateSerializer(serializers.ModelSerializer, ImageURLMixin):
         return self._build_image_url(obj)
 
 
-# -------------------------
-# Category Serializer
-# -------------------------
 class CategorySerializer(serializers.ModelSerializer):
     templates = MemeTemplateSerializer(many=True, read_only=True)
 
