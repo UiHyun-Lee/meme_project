@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, MemeTemplate, Meme
+from .models import Category, MemeTemplate, Meme, WeeklyTopic
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -26,3 +26,8 @@ class MemeAdmin(admin.ModelAdmin):
         return "(no image)"
     image_preview.allow_tags = True
     image_preview.short_description = "Image Preview"
+
+@admin.register(WeeklyTopic)
+class WeeklyTopicAdmin(admin.ModelAdmin):
+    list_display = ("name", "start_date", "end_date", "is_active")
+    list_filter = ("is_active",)
