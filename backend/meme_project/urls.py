@@ -111,7 +111,7 @@ urlpatterns = [
     path('api/memes/vote/', vote_meme),
     path('api/memes/report/', report_meme),
     path('api/leaderboard/', leaderboard),
-    path('cloudinary-templates/', template_list, name='cloudinary-templates'),
+    path('api/cloudinary-templates/', template_list, name='cloudinary-templates'),
     # Google Login
     path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
 
