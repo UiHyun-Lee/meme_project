@@ -1,4 +1,3 @@
-// ProfileHeader.jsx
 import React, { useState } from "react";
 import { logout } from "../utils/login";
 
@@ -30,7 +29,7 @@ export default function ProfileHeader() {
         Hi, {name} !
       </span>
 
-      {/* --- Dropdown 메뉴 --- */}
+      {/* --- Dropdown menu --- */}
       {open && (
         <div
           style={{

@@ -197,7 +197,7 @@
 #     upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
 #     return upload_result["public_id"]
 
-
+import re
 import json
 import os
 from io import BytesIO
@@ -215,27 +215,11 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def generate_ai_meme_design(
-    topic: str,
-    category_name: str,
-    template_desc: str,
-    template_url: str,
+        topic: str,
+        category_name: str,
+        template_desc: str,
+        template_url: str,
 ) -> dict:
-    """
-    OpenAI에게 여러 개의 밈 아이디어를 요청.
-    반환 형식:
-    {
-        "captions": [
-            {
-                "text": "...",
-                "position": "top|bottom|center",
-                "color": "white|#FFFFFF",
-                "font_face": "impact|arial",
-                "emphasis": "normal|bold|italic|bold_italic",
-            },
-            ...
-        ]
-    }
-    """
 
     prompt = f"""
 You are an expert meme designer AI.
@@ -276,7 +260,28 @@ You MUST respond with ONLY one JSON object with this structure:
       "color": "#FFFF00",
       "emphasis": "normal",
       "font_face": "arial"
-    }}
+    }},
+    {{
+  "caption": "example",
+  "position": "top",
+  "color": "#ff00cc",
+  "emphasis": "bold",
+  "font_face": "impact"
+}},
+{{
+  "caption": "example2",
+  "position": "bottom",
+  "color": "deepskyblue",
+  "emphasis": "italic",
+  "font_face": "arial"
+}},
+{{
+  "caption": "example3",
+  "position": "center",
+  "color": "rgb(120, 220, 50)",
+  "emphasis": "normal",
+  "font_face": "impact"
+}}
   ]
 }}
 
@@ -290,10 +295,14 @@ Rules:
   - "color": string (CSS color name or hex like "#FFFFFF")
   - "emphasis": "normal", "bold", "italic", or "bold_italic"
   - "font_face": one of "impact" or "arial"
-- All values of "font_face" MUST be lowercase.
+- Captions MUST be written in simple English.
+- Do NOT use emojis.
+- Do NOT use non-Latin scripts (no Korean, Chinese, Arabic, etc.).
+- Avoid fancy Unicode symbols; use normal ASCII characters only.
 - Do NOT include any other keys or comments.
 - Do NOT wrap the JSON in backticks.
 - The response MUST be valid JSON.
+- "color" may be ANY valid CSS color or hexadecimal color.
 """
 
     try:
@@ -344,7 +353,6 @@ Rules:
                 "color": m.get("color", "white"),
                 "font_face": (m.get("font_face") or "impact").lower().strip(),
                 "emphasis": (m.get("emphasis") or "normal").lower().strip(),
-                # stroke 설정은 여기서 직접 받지 않고, emphasis로부터 자동 계산
             }
         )
 
@@ -355,9 +363,6 @@ Rules:
 
 
 def _wrap_text_to_width(draw, text, font, max_width, stroke_width=0):
-    """
-    글자가 이미지 폭을 넘지 않도록 간단한 word-wrap.
-    """
     words = text.split()
     if not words:
         return ""
@@ -402,16 +407,19 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if not text:
             continue
 
+        text = re.sub(r"[^\x20-\x7E]", "", text)
+        if not text.strip():
+            continue
+
         emphasis = (cap.get("emphasis") or "normal").lower().strip()
         if emphasis not in ["normal", "bold", "italic", "bold_italic"]:
             emphasis = "normal"
 
         font_size = cap.get("font_size")
         if not font_size:
-            font_size = int(H * 0.10)  # 기본: 높이의 10%
+            font_size = int(H * 0.10)
 
         if emphasis in ["bold", "bold_italic"]:
-            # 볼드 느낌 나게 약간 키워주기
             font_size = int(font_size * 1.05)
 
         if font_size < 48:
@@ -433,10 +441,8 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
         color = cap.get("color", "white")
 
-        # 기본 stroke는 emphasis에 따라 다르게
         stroke_color = cap.get("stroke_color")
         if not stroke_color:
-            # 밝은 글자면 검은stroke, 어두운 글자면 흰 stroke 정도로만
             lower = str(color).lower()
             if lower in ["white", "#ffffff", "fff"]:
                 stroke_color = "black"
@@ -450,7 +456,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             else:
                 stroke_width = 4
 
-        # 폭 기준으로 워드랩
         max_text_width = int(W * 0.9)
         wrapped_text = _wrap_text_to_width(
             draw, text, font, max_text_width, stroke_width=stroke_width
@@ -487,14 +492,12 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
 
 def ensure_ai_balance_for_topic(
-    topic: str,
-    base_template: Optional[MemeTemplate] = None,
-    min_ratio: float = 0.7,
-    max_diff: int = 3,
-    max_new: int = 5,
+        topic: str,
+        base_template: Optional[MemeTemplate] = None,
+        min_ratio: float = 0.7,
+        max_diff: int = 3,
+        max_new: int = 5,
 ) -> None:
-
-
     human_count = Meme.objects.filter(topic=topic, created_by="human").count()
     ai_count = Meme.objects.filter(topic=topic, created_by="ai").count()
 

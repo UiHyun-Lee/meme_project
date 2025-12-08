@@ -1,4 +1,3 @@
-// Impressum.jsx
 import React from 'react';
 
 const Impressum = () => {
