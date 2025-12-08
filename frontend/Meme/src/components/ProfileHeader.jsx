@@ -14,7 +14,7 @@ export default function ProfileHeader() {
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
 
-      {/* --- HEADER에 보이는 것은 이름만 --- */}
+      {/* --- only name--- */}
       <span
         onClick={() => setOpen(!open)}
         style={{
