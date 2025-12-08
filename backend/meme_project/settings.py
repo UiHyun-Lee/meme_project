@@ -133,7 +133,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "meme_project.wsgi.application"
-
+OPENAI_VISION_MODEL_MAIN = "gpt-4o"
+OPENAI_VISION_MODEL_ALT = "gpt-4o"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
