@@ -520,22 +520,27 @@ Rules:
     raw_for_log = ""
 
     try:
-        # 비전 모델 호출: 텍스트 + 이미지 URL
         response = client.chat.completions.create(
             model=model_name,
+            temperature=0.1,  # or 0
+            response_format={"type": "json_object"},
             messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a JSON generator. "
+                        "You MUST respond with a single valid JSON object only. "
+                        "No explanations, no comments, no extra text."
+                    ),
+                },
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt.strip()},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": template_url},
-                        },
+                        {"type": "image_url", "image_url": {"url": template_url}},
                     ],
-                }
+                },
             ],
-            response_format={"type": "json_object"},
             max_tokens=700,
         )
     except Exception as e:
