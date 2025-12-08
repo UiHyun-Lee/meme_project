@@ -529,7 +529,7 @@ Rules:
                     "content": [
                         {"type": "text", "text": prompt.strip()},
                         {
-                            "type": "input_image",
+                            "type": "image_url",
                             "image_url": {"url": template_url},
                         },
                     ],
