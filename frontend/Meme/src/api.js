@@ -56,9 +56,7 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-// ---------------------------
 // LOGOUT FUNCTION
-// ---------------------------
 export const logout = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
@@ -67,16 +65,12 @@ export const logout = () => {
   window.location.reload();
 };
 
-// ---------------------------
 // AXIOS INSTANCE
-// ---------------------------
 const API = axios.create({
   baseURL: `${API_BASE_URL}/api/`,
 });
 
-// ---------------------------
 // REQUEST INTERCEPTOR
-// ---------------------------
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -89,9 +83,7 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ---------------------------
 // RESPONSE INTERCEPTOR (AUTO REFRESH)
-// ---------------------------
 let isRefreshing = false;
 let pendingRequests = [];
 
@@ -100,18 +92,15 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // access 토큰 만료로 인한 401 처리
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       const refresh = localStorage.getItem("refreshToken");
       if (!refresh) {
-        // refresh 토큰도 없으면 그냥 로그아웃
         logout();
         return Promise.reject(error);
       }
 
-      // 이미 다른 요청이 refresh 중이면 → 끝날 때까지 기다렸다가 재요청
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           pendingRequests.push({ resolve, reject, originalRequest });
@@ -121,7 +110,6 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // ✅ 네 백엔드 refresh 엔드포인트: /api/token/refresh/
         const resp = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
           refresh,
         });
@@ -129,17 +117,14 @@ API.interceptors.response.use(
         const newAccessToken = resp.data.access;
         localStorage.setItem("accessToken", newAccessToken);
 
-        // 새 토큰을 axios 인스턴스와 현재 요청에 반영
         API.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        // 대기중이던 요청들 처리
         pendingRequests.forEach(({ resolve }) => {
           resolve(API(originalRequest));
         });
         pendingRequests = [];
 
-        // 현재 요청 재시도
         return API(originalRequest);
       } catch (refreshError) {
         console.error("Refresh token expired or invalid → logout");
@@ -156,9 +141,21 @@ API.interceptors.response.use(
   }
 );
 
-// ---------------------------
+// AI MEME GENERATION
+
+export const generateAiMemes = (templateId, count = 5) =>
+  API.post("memes/ai-generate/", {
+    template: templateId,
+    count,
+  });
+
+export const generateMultipleAiMemes = (count = 5, templateIds = []) =>
+  API.post("memes/ai-generate/multiple/", {
+    count,
+    template_ids: templateIds,
+  });
+
 // API FUNCTIONS
-// ---------------------------
 
 // Cloudinary template load
 export const getCloudTemplates = () => API.get("cloudinary-templates/");
@@ -183,7 +180,7 @@ export const getLeaderboard = () => API.get("leaderboard/");
 export const googleLogin = (id_token) =>
   axios.post(`${API_BASE_URL}/auth/google/`, { id_token });
 
-console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
-console.log("API_BASE_URL =", API_BASE_URL);
+// weekly topic
+export const getCurrentTopic = () => API.get("memes/topic/current/");
 
 export default API;

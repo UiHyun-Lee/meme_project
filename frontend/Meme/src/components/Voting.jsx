@@ -194,7 +194,7 @@
 
 
 import React, { useEffect, useState } from 'react'
-import { getRandomMemes, voteMeme } from '../api'
+import { getRandomMemes, voteMeme, getCurrentTopic  } from '../api'
 import CookieBanner from "./CookieBanner";
 
 const Voting = () => {
@@ -205,6 +205,7 @@ const Voting = () => {
   const [cookieConsent, setCookieConsent] = useState(
     localStorage.getItem("cookieConsent")
   );
+  const [currentTopic, setCurrentTopic] = useState(null)
 
   // Debug log
   useEffect(() => {
@@ -221,8 +222,23 @@ const Voting = () => {
     setCookieConsent("necessary");
   };
 
+  const fetchCurrentTopic = async () => {
+  try {
+    const res = await getCurrentTopic()
+    // res.data: { name, start_date, end_date } 또는 { topic: null }
+    if (res.data && res.data.name) {
+      setCurrentTopic(res.data)
+    } else {
+      setCurrentTopic(null)
+    }
+  } catch (err) {
+    console.error("CURRENT TOPIC ERROR:", err.response?.data || err.message)
+    setCurrentTopic(null)
+  }
+}
 
   useEffect(() => {
+      fetchCurrentTopic()
     fetchMemes()
   }, [])
 
@@ -290,10 +306,12 @@ const Voting = () => {
       }}
     >
       {/* TOPIC */}
-      <p className="topic-text">
-        This week's topic:{" "}
-        <span style={{ color: "#fff176" }}>{memes[0]?.topic}</span>
-      </p>
+<p className="topic-text">
+  This week's topic:{" "}
+  <span style={{ color: "#fff176" }}>
+    {currentTopic?.name || "No active topic"}
+  </span>
+</p>
 
       {/* ⭐ DESKTOP VERSION — ORIGINAL 2 memes side-by-side */}
       <div className="desktop-meme-comparison meme-comparison">
