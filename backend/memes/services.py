@@ -440,10 +440,10 @@ def generate_ai_meme_design(
 
     # settings 에서 모델 이름 가져오기 (없으면 기본값 gpt-4o)
     main_model = getattr(settings, "OPENAI_VISION_MODEL_MAIN", "gpt-4o")
-    alt_model = getattr(settings, "OPENAI_VISION_MODEL_ALT", None)
+    # alt_model = getattr(settings, "OPENAI_VISION_MODEL_ALT", None)
 
-    model_candidates = [m for m in [main_model, alt_model] if m]
-    model_name = random.choice(model_candidates) if model_candidates else "gpt-4o"
+    # model_candidates = [m for m in [main_model, alt_model] if m]
+    model_name = main_model
 
     prompt = f"""
 You are an expert meme designer AI.
