@@ -201,7 +201,7 @@ const Voting = () => {
   const [memes, setMemes] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
-  const [activeIndex, setActiveIndex] = useState(0)   // ⭐ 모바일 슬라이더용
+  const [activeIndex, setActiveIndex] = useState(0)   //  mobile slider
   const [cookieConsent, setCookieConsent] = useState(
     localStorage.getItem("cookieConsent")
   );
@@ -221,7 +221,7 @@ const Voting = () => {
     setCookieConsent("necessary");
   };
 
-  // ⭐ 최초 로딩 시 백엔드에서 밈 가져오기
+
   useEffect(() => {
     fetchMemes()
   }, [])
@@ -232,7 +232,7 @@ const Voting = () => {
       const res = await getRandomMemes()
       let memesData = res.data
 
-      // ⭐ AI/Human 랜덤 순서 유지하기
+      //  AI/Human randomly
       if (memesData.length === 2) {
         const [m1, m2] = memesData
         if (m1.created_by !== m2.created_by && Math.random() < 0.5) {
@@ -241,7 +241,7 @@ const Voting = () => {
       }
 
       setMemes(memesData)
-      setActiveIndex(0)  // 모바일 슬라이더 첫 화면
+      setActiveIndex(0)
     } catch (err) {
       console.error("FETCH ERROR:", err.response?.data || err.message)
       setMessage("Not enough Memes now! 😢")
@@ -336,7 +336,10 @@ const Voting = () => {
         </button>
 
         <div className="slider-viewport">
-          <div className="slider-track" style={{ transform: `translateX(-${activeIndex * 70}%)` }}>
+          <div className="slider-track" style={{
+                        width: `${memes.length * 50}%`,
+                        transform: `translateX(-${activeIndex * 80}%)`
+                  }}>
   {memes.map((meme, index) => {
     return (
       <React.Fragment key={meme.id}>
