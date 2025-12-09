@@ -482,7 +482,7 @@ You MUST respond with ONLY one JSON object with this structure:
 
 Rules:
 - The top-level object MUST have exactly one key: "memes".
-- "memes" MUST be a non-empty array with 5 to 7 elements.
+- "memes" MUST be a non-empty array with 3 to 5 elements.
 - Each element in "memes" MUST have exactly one key: "blocks".
 - "blocks" MUST be a non-empty array with 1 to 3 elements.
 - Each block MUST have exactly five keys:
@@ -743,7 +743,7 @@ def ensure_ai_balance_for_topic(
     base_template: Optional[MemeTemplate] = None,
     min_ratio: float = 0.7,
     max_diff: int = 3,
-    max_new: int = 3,
+    max_new: int = 1,  # Todo : ??
 ) -> None:
 
     human_count = Meme.objects.filter(topic=topic, created_by="human").count()

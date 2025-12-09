@@ -1181,7 +1181,7 @@ class UserMemeUploadView(APIView):
                 base_template=template,
                 min_ratio=0.7,
                 max_diff=3,
-                max_new=5,
+                max_new=3,
             )
         except Exception as e:
             print("AI balance error:", repr(e))
