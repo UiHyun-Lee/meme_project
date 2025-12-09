@@ -12,6 +12,11 @@ const Voting = () => {
   );
   const [currentTopic, setCurrentTopic] = useState(null)
 
+  // Debug log
+  useEffect(() => {
+    console.log("MEMES FROM API:", memes)
+  }, [memes])
+
   const handleAcceptCookies = () => {
     localStorage.setItem("cookieConsent", "all");
     setCookieConsent("all");
