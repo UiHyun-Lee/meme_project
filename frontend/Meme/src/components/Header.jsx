@@ -27,7 +27,9 @@ export default function Header() {
           margin: 0,
           padding: 0,
           marginLeft: "1rem",
-          marginTop: "0.9rem",
+   display: "flex",
+    alignItems: "center",
+    height: "100%",
         }}
       >
         Meme Battle

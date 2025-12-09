@@ -1349,14 +1349,12 @@ button:hover {
 /* Standard: Desktop / große Screens */
 .header-title {
   margin-left: 7vw;   /* leicht nach rechts, aber nicht zu extrem */
-  margin-top: 6vh;
 }
 
 /* Mobile: bis 768px Breite */
 @media (max-width: 768px) {
   .header-title {
     margin-left: 15vw;
-    margin-top: 2vh;
   }
 }
   /*height: 100%;

@@ -662,15 +662,20 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     draw = ImageDraw.Draw(image)
     W, H = image.size
 
+    # FONT_FILES = {
+    #     ("impact", "normal"): "MarkerFelt.ttc",
+    #     ("impact", "bold"): "MarkerFelt.ttc",
+    #     ("impact", "italic"): "MarkerFelt.ttc",
+    #     ("impact", "bold_italic"): "MarkerFelt.ttc",
+    #     ("arial", "normal"): "ArialHB.ttc",
+    #     ("arial", "bold"): "ArialHB.ttc",
+    #     ("arial", "italic"): "NewYorkItalic.ttf",
+    #     ("arial", "bold_italic"): "NewYorkItalic.ttf",
+    # }
+
     FONT_FILES = {
-        ("impact", "normal"): "MarkerFelt.ttc",
-        ("impact", "bold"): "MarkerFelt.ttc",
-        ("impact", "italic"): "MarkerFelt.ttc",
-        ("impact", "bold_italic"): "MarkerFelt.ttc",
-        ("arial", "normal"): "ArialHB.ttc",
-        ("arial", "bold"): "ArialHB.ttc",
-        ("arial", "italic"): "NewYorkItalic.ttf",
-        ("arial", "bold_italic"): "NewYorkItalic.ttf",
+        "impact": "MarkerFelt.ttc",
+        "arial": "Geneva.ttf",
     }
 
     for cap in captions:
@@ -678,7 +683,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if not text:
             continue
 
-        # 안전하게 한 번 더 필터링 (이모지/이상한 유니코드 제거)
         text = re.sub(r"[^A-Za-z0-9 .,!?\"':;()\-_/]", "", text)
         if not text.strip():
             continue
@@ -689,7 +693,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
         font_size = cap.get("font_size")
         if not font_size:
-            font_size = int(H * 0.10)  # 기본: 높이의 10%
+            font_size = int(H * 0.10)
 
         if emphasis in ["bold", "bold_italic"]:
             font_size = int(font_size * 1.05)
@@ -697,17 +701,17 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if font_size < 48:
             font_size = 48
 
-        font_key = (cap.get("font_face") or "impact").lower().strip()
-        font_file = FONT_FILES.get(
-            (font_key, emphasis),
-            FONT_FILES.get((font_key, "normal"), "MarkerFelt.ttc"),
-        )
+        font_family = (cap.get("font_face") or "impact").lower().strip()
+        if font_family not in FONT_FILES:
+            font_family = "impact"
+
+        font_file = FONT_FILES[font_family]
         font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
 
         try:
             font = ImageFont.truetype(font_path, font_size)
         except Exception as e:
-            print(f"⚠ 폰트 로드 실패 ({font_path}) → 기본 폰트 사용:", e)
+            print(f"⚠ font load failed({font_path})", e)
             font = ImageFont.load_default()
 
         color = cap.get("color", "white")

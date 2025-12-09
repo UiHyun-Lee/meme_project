@@ -4,9 +4,9 @@ import App from './App.jsx'
 import './index.css'
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-console.log("GOOGLE CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
-console.log("ENV TEST:", import.meta.env);
-console.log("GOOGLE:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+// console.log("GOOGLE CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+// console.log("ENV TEST:", import.meta.env);
+// console.log("GOOGLE:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
