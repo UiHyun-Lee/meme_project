@@ -541,7 +541,7 @@ Rules:
                     ],
                 },
             ],
-            max_tokens=700,
+            max_tokens=1500,
         )
     except Exception as e:
         print("OpenAI error:", repr(e))
