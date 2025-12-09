@@ -1,35 +1,37 @@
 import React, { useState, useEffect } from 'react'
 import PhotoEditor from './PhotoEditor'
 import html2canvas from 'html2canvas'
-import { uploadMeme } from '../api'
+import { uploadMeme, getCurrentTopic } from '../api'
 import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
-
-const WEEKLY_TOPICS = ["School!", "Food!", "Travel!", "Sports!"];
-
-function getCurrentTopic() {
-  const start = new Date("2025-12-07");
-  const now = new Date();
-
-  const weekMs = 7 * 24 * 60 * 60 * 1000;
-  const diffWeeks = Math.floor((now - start) / weekMs);
-
-  const idx = diffWeeks % WEEKLY_TOPICS.length;
-  return WEEKLY_TOPICS[idx];
-}
-
-const CURRENT_TOPIC = getCurrentTopic();
-
 
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
-
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem("accessToken")
   );
+
+  const [currentTopic, setCurrentTopic] = useState(null);
+  const [topicLoading, setTopicLoading] = useState(true);
+
+
+  useEffect(() => {
+    const fetchTopic = async () => {
+      try {
+        const res = await getCurrentTopic();
+        setCurrentTopic(res.data.topic);
+      } catch (e) {
+        console.error("Failed to fetch weekly topic:", e);
+      } finally {
+        setTopicLoading(false);
+      }
+    };
+
+    fetchTopic();
+  }, []);
 
   useEffect(() => {
     const handleLoginSuccess = () => {
@@ -84,7 +86,7 @@ const SubmitMeme = () => {
       form.append('created_by', 'human');
       form.append('template_id', selectedTemplate?.id);
       form.append('format', selectedTemplate?.description || 'macro');
-      form.append('topic', CURRENT_TOPIC);
+      form.append('topic', currentTopic || 'Unknown');
 
       const res = await uploadMeme(form);
       setUploadedUrl(res.data.image);
