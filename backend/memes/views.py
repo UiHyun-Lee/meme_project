@@ -938,12 +938,20 @@ def generate_ai_meme(request):
 
 @api_view(["POST"])
 def generate_multiple_ai_memes(request):
-
+    """
+    여러 템플릿을 사용해서 한 번에 여러 개 AI 밈 생성.
+    - 네 원래 로직(랜덤 템플릿 + 여러 캡션 → 여러 밈 생성)은 유지.
+    - 대신 한 요청당:
+      - count 상한 5
+      - OpenAI 호출 최대 3번
+    으로 제한해서 타임아웃 위험을 줄임.
+    """
     try:
         current_topic = get_current_topic_or_400()
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 기존: max 20 → 🔴 max 5 로 줄임
     try:
         count = int(request.data.get("count", 3))
     except Exception:
@@ -951,8 +959,8 @@ def generate_multiple_ai_memes(request):
 
     if count < 1:
         count = 1
-    if count > 20:
-        count = 20
+    if count > 5:  # 🔴 20 → 5
+        count = 5
 
     template_ids = request.data.get("template_ids") or []
     if template_ids:
@@ -968,10 +976,18 @@ def generate_multiple_ai_memes(request):
         )
 
     created_memes = []
-    max_iterations = count * 3
+
+    # 🔴 한 요청당 OpenAI 호출 제한 추가
+    max_openai_calls = 3
+    openai_calls = 0
+
+    # 템플릿 선택 시도 횟수 (너무 크게 안 잡음)
+    max_iterations = count * 2
 
     for _ in range(max_iterations):
         if len(created_memes) >= count:
+            break
+        if openai_calls >= max_openai_calls:
             break
 
         template = random.choice(templates)
@@ -986,12 +1002,15 @@ def generate_multiple_ai_memes(request):
             if not template_image_url:
                 continue
 
+        # 🔴 여기서 OpenAI 한 번 호출
+        print("generate_multiple_ai_memes: calling generate_ai_meme_design for template", template.id)
         design = generate_ai_meme_design(
             topic=current_topic,
             category_name=category_name,
             template_desc=template_desc,
             template_url=template_image_url,
         )
+        openai_calls += 1
 
         if "error" in design:
             print("AI design error for template", template.id, design)
@@ -1011,14 +1030,19 @@ def generate_multiple_ai_memes(request):
                 print("apply_ai_text_to_image error:", repr(e))
                 continue
 
-            meme = Meme.objects.create(
-                template=template,
-                image=public_id,
-                caption=str(cap.get("text", "")),
-                created_by="ai",
-                format="macro",
-                topic=current_topic,
-            )
+            try:
+                meme = Meme.objects.create(
+                    template=template,
+                    image=public_id,
+                    caption=str(cap.get("text", "")),
+                    created_by="ai",
+                    format="macro",
+                    topic=current_topic,
+                )
+            except Exception as e:
+                print("Meme create error:", repr(e))
+                continue
+
             created_memes.append(meme)
 
     if not created_memes:
