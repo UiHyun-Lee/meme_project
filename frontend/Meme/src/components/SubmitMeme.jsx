@@ -572,7 +572,7 @@ const SubmitMeme = () => {
               textAlign: "center",
               marginBottom: "20px",
               color: "#333",
-              borderBottom: "2px solid "#4f46e5",
+              borderBottom: '2px solid #4f46e5',
               paddingBottom: "10px",
             }}
           >
