@@ -22,7 +22,7 @@ const SubmitMeme = () => {
     const fetchTopic = async () => {
       try {
         const res = await getCurrentTopic();
-        setCurrentTopic(res.data.topic);
++       setCurrentTopic(res.data);
       } catch (e) {
         console.error("Failed to fetch weekly topic:", e);
       } finally {
@@ -86,7 +86,7 @@ const SubmitMeme = () => {
       form.append('created_by', 'human');
       form.append('template_id', selectedTemplate?.id);
       form.append('format', selectedTemplate?.description || 'macro');
-      form.append('topic', currentTopic || 'Unknown');
+      form.append('topic', currentTopic?.name || 'Unknown');
 
       const res = await uploadMeme(form);
       setUploadedUrl(res.data.image);
@@ -135,7 +135,7 @@ const SubmitMeme = () => {
 <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
   This week's topic:{' '}
   <strong style={{ color: '#ffeb3b' }}>
-    {topicLoading ? 'Loading...' : (currentTopic || 'Unknown')}
+    {topicLoading ? 'Loading...' : (currentTopic.name || 'Unknown')}
   </strong>
 </p>
         </div>
