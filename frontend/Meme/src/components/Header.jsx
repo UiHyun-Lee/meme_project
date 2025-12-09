@@ -10,11 +10,11 @@ export default function Header() {
         padding: "0.5rem 0.7rem",
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start",
+        alignItems: "center",
         background: "#1f1f1f",
         color: "white",
         borderBottom: "1px solid #333",
-        borderRadius: "6px"
+        borderRadius: "6px",
       }}
     >
       {/* LEFT SIDE */}
@@ -27,16 +27,15 @@ export default function Header() {
           margin: 0,
           padding: 0,
           marginLeft: "1rem",
-   display: "flex",
-    alignItems: "center",
-    height: "100%",
+          display: "flex",
+          alignItems: "center",
         }}
       >
         Meme Battle
       </div>
 
       {/* RIGHT SIDE */}
-      <div style={{ marginTop: "0.4rem" }}>
+      <div>
         {!isLoggedIn ? (
           <button
             className="header-title"
@@ -49,7 +48,6 @@ export default function Header() {
               border: "none",
               cursor: "pointer",
               fontSize: "0.9rem",
-              lineHeight: "1rem",
               margin: 0,
             }}
           >
