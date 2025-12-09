@@ -132,9 +132,12 @@ const SubmitMeme = () => {
            <Typewriter text="Use our photo editor to create your meme and join the competition!" speed={50} delayBeforeStart={2000}/>  <span className="cursor">|</span>
         </p>
         <div className="submit-container">
-          <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
-            This week's topic: <strong style={{ color: '#ffeb3b' }}>{CURRENT_TOPIC}</strong>
-          </p>
+<p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
+  This week's topic:{' '}
+  <strong style={{ color: '#ffeb3b' }}>
+    {topicLoading ? 'Loading...' : (currentTopic || 'Unknown')}
+  </strong>
+</p>
         </div>
       </div>
 
