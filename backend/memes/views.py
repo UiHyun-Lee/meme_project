@@ -797,7 +797,7 @@ from .utils import get_current_topic_or_400
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-# Cloudinary 설정
+# Cloudinary config
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -805,9 +805,7 @@ cloudinary.config(
 )
 
 
-# =========================
 # Category / Template / Meme CRUD
-# =========================
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -824,9 +822,7 @@ class MemeViewSet(viewsets.ModelViewSet):
     serializer_class = MemeSerializer
 
 
-# =========================
-# 현재 토픽 조회 (프론트용)
-# =========================
+
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -845,22 +841,8 @@ def current_topic_view(request):
     )
 
 
-# =========================
-# AI 밈 생성 (단일 템플릿에서 여러 개)
-# =========================
-
 @api_view(["POST"])
 def generate_ai_meme(request):
-    """
-    POST /api/memes/ai-generate/
-    body 예시:
-    {
-      "template": 1,
-      "count": 5   // 선택사항, 기본 5, 최대 7
-    }
-
-    한 템플릿에서 여러 개(5~7개) AI 밈을 생성해서 리스트로 반환.
-    """
     template_id = request.data.get("template")
     if not template_id:
         return Response(
@@ -870,7 +852,6 @@ def generate_ai_meme(request):
 
     template = get_object_or_404(MemeTemplate, id=template_id)
 
-    # 이번 주 토픽
     try:
         current_topic = get_current_topic_or_400()
     except Exception as e:
@@ -882,7 +863,6 @@ def generate_ai_meme(request):
     try:
         template_image_url = template.image.url
     except Exception:
-        # image 필드가 그냥 URL 문자열일 수도 있어서 fallback
         template_image_url = str(template.image)
         if not template_image_url:
             return Response(
@@ -890,7 +870,7 @@ def generate_ai_meme(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    # 몇 개 생성할지 (기본 5, 최대 7)
+    # meme cnt (default 5, max 7)
     try:
         requested_count = int(request.data.get("count", 5))
     except Exception:
@@ -919,12 +899,10 @@ def generate_ai_meme(request):
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    # 요청 개수만큼만 사용
     captions = captions[:requested_count]
 
     created_memes = []
 
-    # 2) 각 캡션마다 이미지 하나씩 생성 + Cloudinary 업로드
     for cap in captions:
         try:
             public_id = apply_ai_text_to_image(template_image_url, [cap])
@@ -939,7 +917,7 @@ def generate_ai_meme(request):
                 caption=str(cap.get("text", "")),
                 created_by="ai",
                 format="macro",
-                topic=current_topic,  # 이번 주 토픽 고정
+                topic=current_topic,
             )
             created_memes.append(meme)
         except Exception as e:
@@ -956,22 +934,11 @@ def generate_ai_meme(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# =========================
-# AI 밈 생성 (여러 템플릿에서 N개)
-# =========================
+# AI meme generate
 
 @api_view(["POST"])
 def generate_multiple_ai_memes(request):
-    """
-    POST /api/memes/ai-generate/multiple/
-    body 예시:
-    {
-      "count": 5,
-      "template_ids": [1, 2, 3]   // 선택사항, 없으면 전체 템플릿에서 랜덤
-    }
 
-    여러 템플릿에서 섞어서 총 N개의 AI 밈을 생성.
-    """
     try:
         current_topic = get_current_topic_or_400()
     except Exception as e:
@@ -985,7 +952,7 @@ def generate_multiple_ai_memes(request):
     if count < 1:
         count = 1
     if count > 20:
-        count = 20  # 안전하게 상한선
+        count = 20
 
     template_ids = request.data.get("template_ids") or []
     if template_ids:
@@ -1001,7 +968,6 @@ def generate_multiple_ai_memes(request):
         )
 
     created_memes = []
-    # 무한루프 방지용
     max_iterations = count * 3
 
     for _ in range(max_iterations):
@@ -1065,9 +1031,7 @@ def generate_multiple_ai_memes(request):
     return Response(data, status=status.HTTP_201_CREATED)
 
 
-# =========================
-# Cloudinary 데이터 import
-# =========================
+# Cloudinary data import
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -1155,9 +1119,7 @@ def import_cloudinary_data(request):
     )
 
 
-# =========================
-# 유저 밈 업로드 (Human)
-# =========================
+# user mem upload
 
 class UserMemeUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -1184,7 +1146,6 @@ class UserMemeUploadView(APIView):
         else:
             template = MemeTemplate.objects.first()
 
-        # 토픽: 현재 WeeklyTopic이 있으면 그걸 쓰고, 없으면 템플릿 카테고리 이름으로 fallback
         try:
             current_topic = get_current_topic_or_400()
         except Exception:
@@ -1214,7 +1175,6 @@ class UserMemeUploadView(APIView):
             topic=current_topic,
         )
 
-        # 사람 밈 수에 맞춰 AI 밈 자동 밸런싱 시도
         try:
             ensure_ai_balance_for_topic(
                 topic=current_topic,
@@ -1224,15 +1184,12 @@ class UserMemeUploadView(APIView):
                 max_new=5,
             )
         except Exception as e:
-            # 밸런싱 실패해도 업로드 자체는 성공해야 하므로, 그냥 로그만 찍고 무시
             print("AI balance error:", repr(e))
 
         return Response(MemeSerializer(meme).data, status=201)
 
 
-# =========================
-# 랜덤 human vs ai (같은 토픽에서만)
-# =========================
+# human vs ai randomly
 
 @api_view(["GET"])
 def random_memes(request):
@@ -1260,9 +1217,6 @@ def random_memes(request):
     return Response(MemeSerializer([selected_human, selected_ai], many=True).data)
 
 
-# =========================
-# 투표 / 신고 / 리더보드
-# =========================
 
 @api_view(["POST"])
 def vote_meme(request):

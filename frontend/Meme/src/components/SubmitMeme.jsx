@@ -89,10 +89,10 @@ const SubmitMeme = () => {
       const res = await uploadMeme(form);
       setUploadedUrl(res.data.image);
 
-      alert('Cloudinary + DB Upload Success!');
+      alert('Upload Success!');
     } catch (err) {
       console.error('UPLOAD ERROR:', err.response?.data || err.message || err);
-      alert('Upload failed! Check console.');
+      alert('Upload failed!');
     } finally {
       setUploading(false);
     }

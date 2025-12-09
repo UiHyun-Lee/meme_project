@@ -459,7 +459,7 @@ You are given a meme template image (attached image). Analyze the image carefull
 - Choose correct placement ("top", "center", "bottom") for each block based on the image composition.
 - All captions MUST clearly relate to the given TOPIC.
 
-For this SINGLE template image, create between 5 and 7 different meme ideas.
+For this SINGLE template image, create between 3 and 5 different meme ideas.
 
 You MUST respond with ONLY one JSON object with this structure:
 
@@ -768,7 +768,7 @@ def ensure_ai_balance_for_topic(
     base_template: Optional[MemeTemplate] = None,
     min_ratio: float = 0.7,
     max_diff: int = 3,
-    max_new: int = 5,
+    max_new: int = 3,
 ) -> None:
     """
     - topic 기준으로 human/ai 밈 개수 체크
