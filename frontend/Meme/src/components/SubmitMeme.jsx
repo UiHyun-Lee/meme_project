@@ -1,37 +1,35 @@
 import React, { useState, useEffect } from 'react'
 import PhotoEditor from './PhotoEditor'
 import html2canvas from 'html2canvas'
-import { uploadMeme, getCurrentTopic } from '../api'
+import { uploadMeme } from '../api'
 import { ensureLogin } from "../utils/login";
 import Typewriter from "./Typewriter";
 import FadeInSection from "./FadeInSection";
+
+const WEEKLY_TOPICS = ["School!", "Food!", "Travel!", "Sports!"];
+
+function getCurrentTopic() {
+  const start = new Date("2025-12-07");
+  const now = new Date();
+
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const diffWeeks = Math.floor((now - start) / weekMs);
+
+  const idx = diffWeeks % WEEKLY_TOPICS.length;
+  return WEEKLY_TOPICS[idx];
+}
+
+const CURRENT_TOPIC = getCurrentTopic();
+
 
 const SubmitMeme = () => {
   const [uploading, setUploading] = useState(false)
   const [uploadedUrl, setUploadedUrl] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem("accessToken")
   );
-
-  const [currentTopic, setCurrentTopic] = useState(null);
-  const [topicLoading, setTopicLoading] = useState(true);
-
-
-  useEffect(() => {
-    const fetchTopic = async () => {
-      try {
-        const res = await getCurrentTopic();
-+       setCurrentTopic(res.data);
-      } catch (e) {
-        console.error("Failed to fetch weekly topic:", e);
-      } finally {
-        setTopicLoading(false);
-      }
-    };
-
-    fetchTopic();
-  }, []);
 
   useEffect(() => {
     const handleLoginSuccess = () => {
@@ -86,7 +84,7 @@ const SubmitMeme = () => {
       form.append('created_by', 'human');
       form.append('template_id', selectedTemplate?.id);
       form.append('format', selectedTemplate?.description || 'macro');
-      form.append('topic', currentTopic?.name || 'Unknown');
+      form.append('topic', CURRENT_TOPIC);
 
       const res = await uploadMeme(form);
       setUploadedUrl(res.data.image);
@@ -132,12 +130,9 @@ const SubmitMeme = () => {
            <Typewriter text="Use our photo editor to create your meme and join the competition!" speed={50} delayBeforeStart={2000}/>  <span className="cursor">|</span>
         </p>
         <div className="submit-container">
-<p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
-  This week's topic:{' '}
-  <strong style={{ color: '#ffeb3b' }}>
-    {topicLoading ? 'Loading...' : (currentTopic.name || 'Unknown')}
-  </strong>
-</p>
+          <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
+            This week's topic: <strong style={{ color: '#ffeb3b' }}>{CURRENT_TOPIC}</strong>
+          </p>
         </div>
       </div>
 
