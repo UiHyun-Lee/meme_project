@@ -30,7 +30,6 @@ const Voting = () => {
   const fetchCurrentTopic = async () => {
   try {
     const res = await getCurrentTopic()
-    // res.data: { name, start_date, end_date } 또는 { topic: null }
     if (res.data && res.data.name) {
       setCurrentTopic(res.data)
     } else {
