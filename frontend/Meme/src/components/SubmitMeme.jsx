@@ -135,7 +135,7 @@ const SubmitMeme = () => {
 <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold', textAlign: 'center'}}>
   This week's topic:{' '}
   <strong style={{ color: '#ffeb3b' }}>
-    {topicLoading ? 'Loading...' : (currentTopic?.name || 'Unknown')}
+    {topicLoading ? 'Loading...' : (currentTopic.name || 'Unknown')}
   </strong>
 </p>
         </div>

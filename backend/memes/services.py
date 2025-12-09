@@ -394,14 +394,8 @@ from .models import MemeTemplate, Meme
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
-# ------------------------------------------------------
-# 로깅: 나중에 분석용으로 OpenAI 호출/응답을 파일에 저장
-# ------------------------------------------------------
 def log_ai_meme_call(model_name: str, topic: str, template_url: str, prompt: str, raw_response: str) -> None:
-    """
-    BASE_DIR/ai_logs/meme_design.log 에 JSONL 로 한 줄씩 append.
-    나중에 어떤 템플릿 + 어떤 토픽 + 어떤 모델이 어떤 응답을 줬는지 분석할 수 있음.
-    """
+
     try:
         log_dir = os.path.join(settings.BASE_DIR, "ai_logs")
         os.makedirs(log_dir, exist_ok=True)
@@ -417,26 +411,15 @@ def log_ai_meme_call(model_name: str, topic: str, template_url: str, prompt: str
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     except Exception as e:
-        # 로깅 실패는 서비스에 영향 주면 안 됨
         print("AI meme log error:", repr(e))
 
 
-# ------------------------------------------------------
-# 1) 비전 + 멀티 블록 지원 AI 디자인 생성
-# ------------------------------------------------------
 def generate_ai_meme_design(
     topic: str,
     category_name: str,
     template_desc: str,
     template_url: str,
 ) -> dict:
-    """
-    - gpt-4o(비전) + 필요하면 settings 에서 지정한 다른 비전 모델 중 하나를 랜덤으로 사용
-    - 템플릿 이미지를 실제로 "보고" (Vision) 레이아웃을 이해한 뒤,
-      1~3 개의 텍스트 블록을 가진 밈 아이디어 5~7개 생성
-    - 내부적으로는 designs(이미지 하나당 여러 블록)와
-      flat captions(기존 코드 호환용)를 둘 다 리턴
-    """
 
     # settings 에서 모델 이름 가져오기 (없으면 기본값 gpt-4o)
     main_model = getattr(settings, "OPENAI_VISION_MODEL_MAIN", "gpt-4o")
@@ -568,7 +551,6 @@ Rules:
                 "raw": raw[:600],
             }
 
-    # 성공 응답 로그
     try:
         log_ai_meme_call(model_name, topic, template_url, prompt.strip(), raw_for_log)
     except Exception:
@@ -597,7 +579,6 @@ Rules:
             if not text:
                 continue
 
-            # 영어/숫자/기본 문장부호만 허용 → 네모(□) 방지
             text = re.sub(r"[^A-Za-z0-9 .,!?\"':;()\-_/]", "", text)
             if not text.strip():
                 continue
@@ -618,7 +599,6 @@ Rules:
     if not designs:
         return {"error": "no_captions"}
 
-    # 기존 코드와 호환되도록 flat captions도 같이 리턴
     flat_captions = [block for blocks in designs for block in blocks]
 
     return {
@@ -628,9 +608,6 @@ Rules:
     }
 
 
-# ------------------------------------------------------
-# 2) 텍스트 래핑 헬퍼
-# ------------------------------------------------------
 def _wrap_text_to_width(draw, text, font, max_width, stroke_width=0):
     words = text.split()
     if not words:
@@ -651,9 +628,6 @@ def _wrap_text_to_width(draw, text, font, max_width, stroke_width=0):
     return "\n".join(lines)
 
 
-# ------------------------------------------------------
-# 3) 실제 이미지 위에 텍스트/색 입히기
-# ------------------------------------------------------
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     resp = requests.get(template_url)
     resp.raise_for_status()
@@ -716,7 +690,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
         color = cap.get("color", "white")
 
-        # stroke 기본값: 밝은 글자면 검정, 그 외엔 흰색
+        # stroke default
         stroke_color = cap.get("stroke_color")
         if not stroke_color:
             lower = str(color).lower()
@@ -764,9 +738,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     return upload_result["public_id"]
 
 
-# ------------------------------------------------------
-# 4) 사람/AI 밸런스 맞추기
-# ------------------------------------------------------
 def ensure_ai_balance_for_topic(
     topic: str,
     base_template: Optional[MemeTemplate] = None,
@@ -774,11 +745,7 @@ def ensure_ai_balance_for_topic(
     max_diff: int = 3,
     max_new: int = 3,
 ) -> None:
-    """
-    - topic 기준으로 human/ai 밈 개수 체크
-    - human 대비 ai 최소 비율(min_ratio), 최대 차이(max_diff)를 만족하도록
-      부족한 ai 밈을 자동 생성 (최대 max_new개)
-    """
+
     human_count = Meme.objects.filter(topic=topic, created_by="human").count()
     ai_count = Meme.objects.filter(topic=topic, created_by="ai").count()
 
@@ -832,7 +799,6 @@ def ensure_ai_balance_for_topic(
         if not captions:
             continue
 
-        # 가장 첫 블록만 사용 (간단 버전)
         cap = captions[0]
 
         try:
