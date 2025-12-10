@@ -1106,10 +1106,11 @@ def leaderboard_memes(request):
 @api_view(["GET"])
 def leaderboard_humans_vs_ai(request):
 
-    all_memes = Meme.objects.all().order_by("-rating")[:10]
-
     humans = Meme.objects.filter(created_by="human")
     ai = Meme.objects.filter(created_by="ai")
+
+    human_top10 = humans.order_by("-rating")[:10]
+    ai_top10 = ai.order_by("-rating")[:10]
 
     def summary(qs):
         total_votes = sum(m.total_votes for m in qs)
@@ -1126,8 +1127,10 @@ def leaderboard_humans_vs_ai(request):
             "human": summary(humans),
             "ai": summary(ai)
         },
-        "top10": MemeSerializer(all_memes, many=True).data
+        "human_top10": MemeSerializer(human_top10, many=True).data,
+        "ai_top10": MemeSerializer(ai_top10, many=True).data,
     })
+
 
 @api_view(["GET"])
 def leaderboard_top_memes(request):
