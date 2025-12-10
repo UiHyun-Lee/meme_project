@@ -369,7 +369,7 @@ const Leaderboard = () => {
                       {entry.created_by.toUpperCase()}
                     </span>
                   </td>
-                  <td>{entry.rating.toFixed(0)}</td>
+                  <td>{meme.rating.toFixed(0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -428,7 +428,7 @@ const Leaderboard = () => {
                       {meme.created_by.toUpperCase()}
                     </span>
                   </td>
-                  <td>{entry.rating.toFixed(0)}</td>
+                  <td>{meme.rating.toFixed(0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -460,7 +460,7 @@ const Leaderboard = () => {
                       {meme.created_by.toUpperCase()}
                     </span>
                   </td>
-                  <td>{entry.rating.toFixed(0)}</td>
+                  <td>{meme.rating.toFixed(0)}</td>
                 </tr>
               ))}
             </tbody>
