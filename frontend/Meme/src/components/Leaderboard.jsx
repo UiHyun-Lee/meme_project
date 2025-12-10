@@ -459,31 +459,28 @@ const Leaderboard = () => {
         <div className="tab-content">
           <h3>Top 10 Memes</h3>
 
-          <div className="meme-grid">
-            {galleryTop10.map((meme, i) => (
-              <div key={meme.id} className="meme-gallery-item">
+<div className="meme-grid">
+  {galleryTop10.map((meme, i) => (
+    <div key={meme.id} className="meme-gallery-item">
+      <img src={meme.image_url} alt={`meme-${meme.id}`} />
 
-                {/* Meme Image */}
-                <img src={meme.image_url} alt={`meme-${meme.id}`} />
+      <div className="meme-info">
+        {/* Rank badge */}
+        <div className="meme-rank">#{i + 1}</div>
 
-                <div className="meme-info">
-                  {/* Rank badge */}
-                  <div className="meme-rank">#{i + 1}</div>
+        {/* Trophy */}
+        <div className="meme-likes">🏆 {meme.total_votes} votes</div>
 
-                  {/* Trophy / vote count */}
-                  <div className="meme-likes">🏆 {meme.total_votes} votes</div>
-
-                  {/* Author */}
-                  <div className="meme-author">
-                    by {meme.created_by.toUpperCase()}
-                    <span className={`author-type ${meme.created_by}`}>
-                      {meme.created_by === "human" ? "Human" : "AI"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* TYPE BADGE - SAME AS INDIVIDUAL TABLE */}
+        <div style={{ marginTop: "8px" }}>
+          <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
+            {meme.created_by.toUpperCase()}
+          </span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
         </div>
       )}
     </div>
