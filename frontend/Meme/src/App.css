@@ -1340,6 +1340,20 @@ button:hover {
   animation: blink 0.8s step-end infinite;
 }
 
+.cookie-blur-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+
+  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.4);
+
+  z-index: 999;
+  pointer-events: auto;
+}
+
 @keyframes blink {
   50% {
     opacity: 0;

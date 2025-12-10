@@ -116,8 +116,11 @@ export const uploadMeme = (formData) =>
 export const getRandomMemes = () => API.get("memes/random/");
 
 // voting api
-export const voteMeme = (memeId) =>
-  API.post("memes/vote/", { meme_id: memeId });
+export const voteMeme = (winnerId, loserId) =>
+  client.post("/memes/vote/", {
+    winner_id: winnerId,
+    loser_id: loserId,
+  })
 
 // leaderboard api
 export const getLeaderboard = () => API.get("leaderboard/");
