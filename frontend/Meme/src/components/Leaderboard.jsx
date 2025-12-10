@@ -369,7 +369,7 @@ const Leaderboard = () => {
                       {entry.created_by.toUpperCase()}
                     </span>
                   </td>
-                  <td>{meme.rating.toFixed(0)}</td>
+                  <td>{entry.rating.toFixed(0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -383,7 +383,6 @@ const Leaderboard = () => {
       {activeTab === "humansVsAi" && (
         <div className="tab-content">
 
-          {/* Summary Cards */}
           <div className="summary-cards">
             <div className="summary-card">
               <h4>HUMAN</h4>
@@ -402,7 +401,7 @@ const Leaderboard = () => {
             </div>
           </div>
 
-          {/* HUMAN TOP 10 TABLE */}
+          {/* HUMAN TOP 10 */}
           <h3>Top Human Memes</h3>
           <table className="leaderboard-table">
             <thead>
@@ -434,7 +433,7 @@ const Leaderboard = () => {
             </tbody>
           </table>
 
-          {/* AI TOP 10 TABLE */}
+          {/* AI TOP 10 */}
           <h3>Top AI Memes</h3>
           <table className="leaderboard-table">
             <thead>
@@ -502,6 +501,7 @@ const Leaderboard = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
