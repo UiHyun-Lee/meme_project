@@ -453,35 +453,39 @@ const Leaderboard = () => {
       )}
 
       {/* ===================================================== */}
-      {/* 3) TOP 10 MEMES — unified gallery */}
-{activeTab === "topMemes" && (
-  <div className="tab-content">
+      {/* 3) TOP 10 MEMES — unified gallery (pretty design restored) */}
+      {/* ===================================================== */}
+      {activeTab === "topMemes" && (
+        <div className="tab-content">
+          <h3>Top 10 Memes</h3>
 
-    <h3>Top 10 Memes</h3>
+          <div className="meme-grid">
+            {galleryTop10.map((meme, i) => (
+              <div key={meme.id} className="meme-gallery-item">
 
-    <div className="meme-grid">
-      {galleryTop10.map((meme, i) => (
-        <div key={meme.id} className="meme-gallery-item">
+                {/* Meme Image */}
+                <img src={meme.image_url} alt={`meme-${meme.id}`} />
 
-          <img src={meme.image_url} alt={`meme-${meme.id}`} />
+                <div className="meme-info">
+                  {/* Rank badge */}
+                  <div className="meme-rank">#{i + 1}</div>
 
-          <div className="meme-info">
-            {/* RANK BADGE */}
-            <div className="meme-rank">#{i + 1}</div>
+                  {/* Trophy / vote count */}
+                  <div className="meme-likes">🏆 {meme.total_votes} votes</div>
 
-            {/* LIKE / VOTE COUNT */}
-            <div className="meme-likes">🏆 {meme.total_votes} votes</div>
-
-            {/* AUTHOR */}
-            <div className="meme-author">
-              {meme.created_by.toUpperCase()}
-              <span className={`author-type ${meme.created_by}`}>
-                {meme.created_by === "human" ? "Human" : "AI"}
-              </span>
-            </div>
+                  {/* Author */}
+                  <div className="meme-author">
+                    by {meme.created_by.toUpperCase()}
+                    <span className={`author-type ${meme.created_by}`}>
+                      {meme.created_by === "human" ? "Human" : "AI"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 };
