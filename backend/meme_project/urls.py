@@ -13,7 +13,9 @@ from memes.views import (
     report_meme,
     random_memes,
     vote_meme,
-    leaderboard,
+    leaderboard_memes,
+    leaderboard_top_memes,
+    leaderboard_humans_vs_ai,
     current_topic_view,
 )
 from evaluations.views import EvaluationViewSet
@@ -62,7 +64,10 @@ urlpatterns = [
     # User Meme Upload
     path('api/user-memes/', UserMemeUploadView.as_view()),
 
-
+    # leaderboard
+    path("api/leaderboard/memes/", leaderboard_memes),
+    path("api/leaderboard/humans-vs-ai/", leaderboard_humans_vs_ai),
+    path("api/leaderboard/top-memes/", leaderboard_top_memes),
 
     # Get the currently active weekly topic
     path("api/memes/topic/current/", current_topic_view),
@@ -77,7 +82,7 @@ urlpatterns = [
     path('api/memes/report/', report_meme),
 
     # Leaderboard sorted by votes
-    path('api/leaderboard/', leaderboard),
+    # path('api/leaderboard/', leaderboard),
 
 
     # Google Login

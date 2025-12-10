@@ -990,60 +990,6 @@ def random_memes(request):
     return Response(MemeSerializer(memes, many=True).data)
 
 
-# # =========================
-# # Voting with ELO
-# # =========================
-# @api_view(["POST"])
-# def vote_meme(request):
-#     """
-#     ELO 기반 투표:
-#     - 프론트에서 winner_id, loser_id 둘 다 보냄
-#     - 두 밈은 같은 topic 안에서 비교된다고 가정
-#     """
-#     winner_id = request.data.get("winner_id")
-#     loser_id = request.data.get("loser_id")
-#
-#     if not winner_id or not loser_id:
-#         return Response({"error": "winner_id and loser_id required"}, status=400)
-#
-#     if winner_id == loser_id:
-#         return Response({"error": "winner_id and loser_id must be different"}, status=400)
-#
-#     try:
-#         winner = Meme.objects.get(id=winner_id)
-#         loser = Meme.objects.get(id=loser_id)
-#     except Meme.DoesNotExist:
-#         return Response({"error": "meme not found"}, status=404)
-#
-#     # 안전장치: topic이 다르면 비교하지 않음
-#     if winner.topic != loser.topic:
-#         return Response({"error": "memes must belong to the same topic"}, status=400)
-#
-#     r_w = winner.rating or 1000.0
-#     r_l = loser.rating or 1000.0
-#
-#     new_r_w = elo_update(r_w, r_l, score_a=1.0)  # winner 승
-#     new_r_l = elo_update(r_l, r_w, score_a=0.0)  # loser 패
-#
-#     winner.rating = new_r_w
-#     loser.rating = new_r_l
-#
-#     winner.total_votes += 1
-#     loser.total_votes += 1
-#
-#     winner.save()
-#     loser.save()
-#
-#     return Response(
-#         {
-#             "success": True,
-#             "winner_id": winner.id,
-#             "loser_id": loser.id,
-#             "winner_rating": winner.rating,
-#             "loser_rating": loser.rating,
-#         }
-#     )
-
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def vote_meme(request):
@@ -1141,20 +1087,47 @@ def report_meme(request):
     return Response({"success": True})
 
 
-# Leaderboard (meme 비교는 topic별)
 @api_view(["GET"])
-def leaderboard(request):
-    topic_param = request.query_params.get("topic")
+def leaderboard_memes(request):
+    """
+    Topic 기반 top 10 ELO 리더보드
+    """
+    topic = request.query_params.get("topic")
 
-    if topic_param:
-        qs = Meme.objects.filter(topic=topic_param)
-    else:
+    if not topic:
         try:
-            current_topic = get_current_topic_or_400()
-            qs = Meme.objects.filter(topic=current_topic)
+            topic = get_current_topic_or_400()
         except Exception:
-            # current topic이 없으면 전체에서라도 반환
-            qs = Meme.objects.all()
+            return Response({"error": "no_active_topic"}, status=400)
 
-    memes = qs.order_by("-rating")[:10]
+    memes = Meme.objects.filter(topic=topic).order_by("-rating")[:10]
     return Response(MemeSerializer(memes, many=True).data)
+
+@api_view(["GET"])
+def leaderboard_humans_vs_ai(request):
+    """
+    전체 Topic 기준 Humans / AI 각각 top 10
+    """
+    def top10(qs):
+        return MemeSerializer(qs.order_by("-rating")[:10], many=True).data
+
+    humans = Meme.objects.filter(created_by="human")
+    ai = Meme.objects.filter(created_by="ai")
+
+    return Response({
+        "human": top10(humans),
+        "ai": top10(ai),
+    })
+
+@api_view(["GET"])
+def leaderboard_top_memes(request):
+    """
+    Human / AI 각각 이미지 갤러리용 top 10
+    """
+    humans = Meme.objects.filter(created_by="human").order_by("-rating")[:10]
+    ai = Meme.objects.filter(created_by="ai").order_by("-rating")[:10]
+
+    return Response({
+        "human": MemeSerializer(humans, many=True).data,
+        "ai": MemeSerializer(ai, many=True).data,
+    })

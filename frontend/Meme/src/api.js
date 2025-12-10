@@ -123,7 +123,14 @@ export const voteMeme = (winnerId, loserId) =>
   });
 
 // leaderboard api
-export const getLeaderboard = () => API.get("leaderboard/");
+export const getLeaderboardMemes = (topic) =>
+  API.get(`leaderboard/memes/?topic=${topic}`);
+
+export const getLeaderboardHumansVsAI = () =>
+  API.get("leaderboard/humans-vs-ai/");
+
+export const getLeaderboardTopMemes = () =>
+  API.get("leaderboard/top-memes/");
 
 // Google Login
 export const googleLogin = (id_token) =>
