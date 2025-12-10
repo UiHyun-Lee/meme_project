@@ -456,21 +456,37 @@ const Leaderboard = () => {
       {/* 3) TOP 10 MEMES — unified gallery */}
       {/* ===================================================== */}
       {activeTab === "topMemes" && (
-        <div className="tab-content">
-          <h3>Top 10 Memes</h3>
+  <div className="tab-content">
 
-          <div className="meme-grid">
-            {galleryTop10.map((meme, i) => (
-              <div key={meme.id} className="meme-gallery-item">
-                <img src={meme.image_url} />
-                <div className="meme-info">#{i + 1}</div>
-              </div>
-            ))}
+    <h3>Top 10 Memes</h3>
+
+    <div className="meme-grid">
+      {galleryTop10.map((meme, i) => (
+        <div key={meme.id} className="meme-gallery-item">
+
+          <img src={meme.image_url} alt={`meme-${meme.id}`} />
+
+          <div className="meme-info">
+            {/* RANK BADGE */}
+            <div className="meme-rank">#{i + 1}</div>
+
+            {/* LIKE / VOTE COUNT */}
+            <div className="meme-likes">🏆 {meme.total_votes} votes</div>
+
+            {/* AUTHOR */}
+            <div className="meme-author">
+              {meme.created_by.toUpperCase()}
+              <span className={`author-type ${meme.created_by}`}>
+                {meme.created_by === "human" ? "Human" : "AI"}
+              </span>
+            </div>
           </div>
         </div>
-      )}
+      ))}
     </div>
-  );
+
+  </div>
+)}
 };
 
 export default Leaderboard;
