@@ -1106,14 +1106,10 @@ def leaderboard_memes(request):
 @api_view(["GET"])
 def leaderboard_humans_vs_ai(request):
 
+    all_memes = Meme.objects.all().order_by("-rating")[:10]
+
     humans = Meme.objects.filter(created_by="human")
     ai = Meme.objects.filter(created_by="ai")
-
-    def top10(qs):
-        return MemeSerializer(
-            qs.order_by("-rating")[:10],
-            many=True
-        ).data
 
     def summary(qs):
         total_votes = sum(m.total_votes for m in qs)
@@ -1126,23 +1122,14 @@ def leaderboard_humans_vs_ai(request):
         }
 
     return Response({
-        "human_top10": top10(humans),
-        "ai_top10": top10(ai),
         "summary": {
             "human": summary(humans),
             "ai": summary(ai)
-        }
+        },
+        "top10": MemeSerializer(all_memes, many=True).data
     })
 
 @api_view(["GET"])
 def leaderboard_top_memes(request):
-    """
-    Human / AI 각각 이미지 갤러리용 top 10
-    """
-    humans = Meme.objects.filter(created_by="human").order_by("-rating")[:10]
-    ai = Meme.objects.filter(created_by="ai").order_by("-rating")[:10]
-
-    return Response({
-        "human": MemeSerializer(humans, many=True).data,
-        "ai": MemeSerializer(ai, many=True).data,
-    })
+    memes = Meme.objects.all().order_by("-rating")[:10]
+    return Response({"top10": MemeSerializer(memes, many=True).data})
