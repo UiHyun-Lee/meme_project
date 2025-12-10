@@ -990,49 +990,136 @@ def random_memes(request):
     return Response(MemeSerializer(memes, many=True).data)
 
 
-# =========================
-# Voting with ELO
-# =========================
+# # =========================
+# # Voting with ELO
+# # =========================
+# @api_view(["POST"])
+# def vote_meme(request):
+#     """
+#     ELO 기반 투표:
+#     - 프론트에서 winner_id, loser_id 둘 다 보냄
+#     - 두 밈은 같은 topic 안에서 비교된다고 가정
+#     """
+#     winner_id = request.data.get("winner_id")
+#     loser_id = request.data.get("loser_id")
+#
+#     if not winner_id or not loser_id:
+#         return Response({"error": "winner_id and loser_id required"}, status=400)
+#
+#     if winner_id == loser_id:
+#         return Response({"error": "winner_id and loser_id must be different"}, status=400)
+#
+#     try:
+#         winner = Meme.objects.get(id=winner_id)
+#         loser = Meme.objects.get(id=loser_id)
+#     except Meme.DoesNotExist:
+#         return Response({"error": "meme not found"}, status=404)
+#
+#     # 안전장치: topic이 다르면 비교하지 않음
+#     if winner.topic != loser.topic:
+#         return Response({"error": "memes must belong to the same topic"}, status=400)
+#
+#     r_w = winner.rating or 1000.0
+#     r_l = loser.rating or 1000.0
+#
+#     new_r_w = elo_update(r_w, r_l, score_a=1.0)  # winner 승
+#     new_r_l = elo_update(r_l, r_w, score_a=0.0)  # loser 패
+#
+#     winner.rating = new_r_w
+#     loser.rating = new_r_l
+#
+#     winner.total_votes += 1
+#     loser.total_votes += 1
+#
+#     winner.save()
+#     loser.save()
+#
+#     return Response(
+#         {
+#             "success": True,
+#             "winner_id": winner.id,
+#             "loser_id": loser.id,
+#             "winner_rating": winner.rating,
+#             "loser_rating": loser.rating,
+#         }
+#     )
+
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def vote_meme(request):
     """
     ELO 기반 투표:
     - 프론트에서 winner_id, loser_id 둘 다 보냄
-    - 두 밈은 같은 topic 안에서 비교된다고 가정
+    - 같은 topic 안의 두 밈만 비교
     """
+    print("🔹 VOTE REQUEST DATA:", request.data)
+
     winner_id = request.data.get("winner_id")
     loser_id = request.data.get("loser_id")
 
+    # 1) 파라미터 체크
     if not winner_id or not loser_id:
-        return Response({"error": "winner_id and loser_id required"}, status=400)
+        print("❌ missing winner_id/loser_id")
+        return Response(
+            {"error": "winner_id and loser_id required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # 2) 정수 변환
+    try:
+        winner_id = int(winner_id)
+        loser_id = int(loser_id)
+    except (TypeError, ValueError):
+        print("❌ invalid id values:", winner_id, loser_id)
+        return Response(
+            {"error": "winner_id and loser_id must be integers"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     if winner_id == loser_id:
-        return Response({"error": "winner_id and loser_id must be different"}, status=400)
+        return Response(
+            {"error": "winner_id and loser_id must be different"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
+    # 3) 밈 조회
     try:
         winner = Meme.objects.get(id=winner_id)
         loser = Meme.objects.get(id=loser_id)
     except Meme.DoesNotExist:
-        return Response({"error": "meme not found"}, status=404)
+        print("❌ meme not found:", winner_id, loser_id)
+        return Response({"error": "meme not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    # 안전장치: topic이 다르면 비교하지 않음
+    # 4) topic 일치 확인 (안 맞으면 비교 X)
     if winner.topic != loser.topic:
-        return Response({"error": "memes must belong to the same topic"}, status=400)
+        print("❌ topic mismatch:", winner.topic, loser.topic)
+        return Response(
+            {"error": "memes must belong to the same topic"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    r_w = winner.rating or 1000.0
-    r_l = loser.rating or 1000.0
+    # 5) rating 기본값 안전하게
+    r_w = winner.rating if getattr(winner, "rating", None) is not None else 1000.0
+    r_l = loser.rating if getattr(loser, "rating", None) is not None else 1000.0
 
-    new_r_w = elo_update(r_w, r_l, score_a=1.0)  # winner 승
-    new_r_l = elo_update(r_l, r_w, score_a=0.0)  # loser 패
+    try:
+        new_r_w = elo_update(r_w, r_l, score_a=1.0)  # winner 승
+        new_r_l = elo_update(r_l, r_w, score_a=0.0)  # loser 패
 
-    winner.rating = new_r_w
-    loser.rating = new_r_l
+        winner.rating = new_r_w
+        loser.rating = new_r_l
 
-    winner.total_votes += 1
-    loser.total_votes += 1
+        winner.total_votes = (winner.total_votes or 0) + 1
+        loser.total_votes = (loser.total_votes or 0) + 1
 
-    winner.save()
-    loser.save()
+        winner.save()
+        loser.save()
+    except Exception as e:
+        print("❌ vote_meme internal error:", repr(e))
+        return Response(
+            {"error": "internal_error", "detail": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     return Response(
         {
@@ -1041,9 +1128,9 @@ def vote_meme(request):
             "loser_id": loser.id,
             "winner_rating": winner.rating,
             "loser_rating": loser.rating,
-        }
+        },
+        status=status.HTTP_200_OK,
     )
-
 
 # =========================
 # Report
