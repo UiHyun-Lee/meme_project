@@ -23,7 +23,7 @@ class MemeTemplate(models.Model):
 class Meme(models.Model):
     template = models.ForeignKey(
         MemeTemplate,
-        on_delete=models.SET_NULL,   # 템플릿 지워지면 template만 null로
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="memes"
@@ -34,9 +34,9 @@ class Meme(models.Model):
     format = models.CharField(max_length=50)
     topic = models.CharField(max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    humor_avg = models.FloatField(default=0)
-    creativity_avg = models.FloatField(default=0)
-    cultural_avg = models.FloatField(default=0)
+    # humor_avg = models.FloatField(default=0)
+    # creativity_avg = models.FloatField(default=0)
+    # cultural_avg = models.FloatField(default=0)
     total_votes = models.IntegerField(default=0)
 
     def __str__(self):

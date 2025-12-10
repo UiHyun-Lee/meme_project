@@ -913,7 +913,7 @@ def generate_ai_meme(request):
         try:
             meme = Meme.objects.create(
                 template=template,
-                image=public_id,  # CloudinaryField → public_id
+                image=public_id,
                 caption=str(cap.get("text", "")),
                 created_by="ai",
                 format="macro",
@@ -938,20 +938,11 @@ def generate_ai_meme(request):
 
 @api_view(["POST"])
 def generate_multiple_ai_memes(request):
-    """
-    여러 템플릿을 사용해서 한 번에 여러 개 AI 밈 생성.
-    - 네 원래 로직(랜덤 템플릿 + 여러 캡션 → 여러 밈 생성)은 유지.
-    - 대신 한 요청당:
-      - count 상한 5
-      - OpenAI 호출 최대 3번
-    으로 제한해서 타임아웃 위험을 줄임.
-    """
     try:
         current_topic = get_current_topic_or_400()
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    # 기존: max 20 → 🔴 max 5 로 줄임
     try:
         count = int(request.data.get("count", 3))
     except Exception:
@@ -959,7 +950,7 @@ def generate_multiple_ai_memes(request):
 
     if count < 1:
         count = 1
-    if count > 5:  # 🔴 20 → 5
+    if count > 5:
         count = 5
 
     template_ids = request.data.get("template_ids") or []
