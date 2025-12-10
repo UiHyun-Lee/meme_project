@@ -1105,18 +1105,33 @@ def leaderboard_memes(request):
 
 @api_view(["GET"])
 def leaderboard_humans_vs_ai(request):
-    """
-    전체 Topic 기준 Humans / AI 각각 top 10
-    """
-    def top10(qs):
-        return MemeSerializer(qs.order_by("-rating")[:10], many=True).data
 
     humans = Meme.objects.filter(created_by="human")
     ai = Meme.objects.filter(created_by="ai")
 
+    def top10(qs):
+        return MemeSerializer(
+            qs.order_by("-rating")[:10],
+            many=True
+        ).data
+
+    def summary(qs):
+        total_votes = sum(m.total_votes for m in qs)
+        count = qs.count()
+        avg = total_votes / count if count else 0
+        return {
+            "total_votes": total_votes,
+            "count": count,
+            "avg": round(avg, 1)
+        }
+
     return Response({
-        "human": top10(humans),
-        "ai": top10(ai),
+        "human_top10": top10(humans),
+        "ai_top10": top10(ai),
+        "summary": {
+            "human": summary(humans),
+            "ai": summary(ai)
+        }
     })
 
 @api_view(["GET"])

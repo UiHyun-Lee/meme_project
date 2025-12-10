@@ -188,102 +188,118 @@
 // export default Leaderboard
 
 
-import React, { useEffect, useState } from "react";
+// --- 전체 파일 시작 ---
+
+import React, { useEffect, useState } from 'react'
 import {
   getLeaderboardMemes,
   getLeaderboardHumansVsAI,
   getLeaderboardTopMemes,
-  getCurrentTopic,
-} from "../api";
+  getCurrentTopic
+} from '../api'
 import Typewriter from "./Typewriter";
+import FadeInSection from "./FadeInSection";
 
 const Leaderboard = () => {
-  const [activeTab, setActiveTab] = useState("individual");
+  const [activeTab, setActiveTab] = useState('individual')
 
-  const [topics, setTopics] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null)
+  const [topicList, setTopicList] = useState([])
 
-  const [individualData, setIndividualData] = useState([]);
-  const [humansVsAiData, setHumansVsAiData] = useState({ human: [], ai: [] });
-  const [topMemesData, setTopMemesData] = useState({ human: [], ai: [] });
+  const [individualData, setIndividualData] = useState([])
 
-  const [loading, setLoading] = useState(true);
+  const [humanTop10, setHumanTop10] = useState([])
+  const [aiTop10, setAiTop10] = useState([])
+  const [summary, setSummary] = useState({ human: {}, ai: {} })
 
-  // -----------------------------
-  // Load current topic + available topics
-  // -----------------------------
+  const [topHuman, setTopHuman] = useState([])
+  const [topAi, setTopAi] = useState([])
+
+  const [loading, setLoading] = useState(true)
+
+
+  // -------------------
+  // Init
+  // -------------------
   useEffect(() => {
-    const init = async () => {
-      try {
-        const res = await getCurrentTopic();
-        const topic = res?.data?.name || null;
+    init()
+  }, [])
 
-        setSelectedTopic(topic);
-        setTopics([topic, "All"]); // 필요하다면 DB topic 목록으로 확장
+  const init = async () => {
+    try {
+      const res = await getCurrentTopic()
+      const currentTopic = res?.data?.name || null
 
-        fetchIndividual(topic);
-        fetchHumansVsAi();
-        fetchTopMemes();
-      } catch (err) {
-        console.error("Leaderboard init error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setSelectedTopic(currentTopic)
+      setTopicList([currentTopic]) // 확장 가능
 
-    init();
-  }, []);
+      await fetchIndividual(currentTopic)
+      await fetchHumansVsAi()
+      await fetchTopMemes()
+    } catch (err) {
+      console.error("Leaderboard init error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  // -----------------------------
-  // Fetch Individual Rankings (Topic 기반)
-  // -----------------------------
+
+  // -------------------
+  // 1) Individual Rankings
+  // -------------------
   const fetchIndividual = async (topic) => {
     try {
-      const res = await getLeaderboardMemes(topic);
-      setIndividualData(res.data);
+      const res = await getLeaderboardMemes(topic)
+      setIndividualData(res.data)
     } catch (err) {
-      console.error("Individual fetch error:", err);
+      console.error("Individual fetch error:", err)
     }
-  };
+  }
 
-  // -----------------------------
-  // Humans vs AI (전체 Topic)
-  // -----------------------------
+  const onTopicChange = (topic) => {
+    setSelectedTopic(topic)
+    fetchIndividual(topic)
+  }
+
+
+  // -------------------
+  // 2) Humans vs AI
+  // -------------------
   const fetchHumansVsAi = async () => {
     try {
-      const res = await getLeaderboardHumansVsAI();
-      setHumansVsAiData(res.data);
-    } catch (err) {
-      console.error("Humans vs AI fetch error:", err);
-    }
-  };
+      const res = await getLeaderboardHumansVsAI()
 
-  // -----------------------------
-  // Top Memes (이미지 갤러리)
-  // -----------------------------
+      setHumanTop10(res.data.human_top10)
+      setAiTop10(res.data.ai_top10)
+      setSummary(res.data.summary)
+
+    } catch (err) {
+      console.error("Humans vs AI fetch error:", err)
+    }
+  }
+
+
+  // -------------------
+  // 3) Top Memes
+  // -------------------
   const fetchTopMemes = async () => {
     try {
-      const res = await getLeaderboardTopMemes();
-      setTopMemesData(res.data);
+      const res = await getLeaderboardTopMemes()
+      setTopHuman(res.data.human)
+      setTopAi(res.data.ai)
     } catch (err) {
-      console.error("Top Memes fetch error:", err);
+      console.error("Top memes error:", err)
     }
-  };
+  }
 
-  // -----------------------------
-  // Topic selection (Individual Rankings)
-  // -----------------------------
-  const handleTopicChange = (topic) => {
-    setSelectedTopic(topic);
-    fetchIndividual(topic);
-  };
+
+  // -------------------
+  // RENDER
+  // -------------------
 
   if (loading)
-    return (
-      <p style={{ color: "white", textAlign: "center" }}>
-        Loading leaderboard…
-      </p>
-    );
+    return <p style={{ color: "white", textAlign: "center" }}>Loading leaderboard...</p>
+
 
   return (
     <div
@@ -296,11 +312,20 @@ const Leaderboard = () => {
         color: "white",
       }}
     >
-      <h2>
-        <Typewriter text="Leaderboard" speed={50} />
-      </h2>
 
-      {/* TAB NAVIGATION */}
+      <h2><Typewriter text="Leaderboard" speed={50} /></h2>
+
+      <p>
+        <Typewriter
+          text="Who Reigns Supreme in the Meme Arena?"
+          speed={50}
+          delayBeforeStart={1000}
+        />
+        <span className="cursor">|</span>
+      </p>
+
+
+      {/* TAB BUTTONS */}
       <div className="tab-navigation">
         <button
           className={activeTab === "individual" ? "active" : ""}
@@ -308,36 +333,39 @@ const Leaderboard = () => {
         >
           Individual Rankings
         </button>
+
         <button
-          className={activeTab === "humansVsAI" ? "active" : ""}
-          onClick={() => setActiveTab("humansVsAI")}
+          className={activeTab === "humansVsAi" ? "active" : ""}
+          onClick={() => setActiveTab("humansVsAi")}
         >
           Humans vs AI
         </button>
+
         <button
           className={activeTab === "topMemes" ? "active" : ""}
           onClick={() => setActiveTab("topMemes")}
         >
-          Top Memes
+          Top 10 Memes
         </button>
       </div>
 
-      {/* ------------------------------- */}
+
+      {/* ------------------------------ */}
       {/* 1) INDIVIDUAL RANKINGS */}
-      {/* ------------------------------- */}
+      {/* ------------------------------ */}
       {activeTab === "individual" && (
         <div className="tab-content">
-          <h3>Topic: {selectedTopic}</h3>
 
-          {/* Topic Filter Buttons */}
-          <div className="topic-filter">
-            {topics.map((topic) => (
+          {/* Topic Filter (minimal UI) */}
+          <div style={{ marginBottom: "10px" }}>
+            {topicList.map((t) => (
               <button
-                key={topic}
-                className={selectedTopic === topic ? "active" : ""}
-                onClick={() => handleTopicChange(topic)}
+                key={t}
+                className={selectedTopic === t ? "active" : ""}
+                onClick={() => onTopicChange(t)}
+                style={{ margin: "0 5px" }}
               >
-                {topic}
+                {t}
               </button>
             ))}
           </div>
@@ -358,7 +386,6 @@ const Leaderboard = () => {
                   <td>
                     <img
                       src={entry.image_url}
-                      alt={`meme-${entry.id}`}
                       style={{ width: "80px", borderRadius: "8px" }}
                     />
                   </td>
@@ -371,12 +398,33 @@ const Leaderboard = () => {
         </div>
       )}
 
-      {/* ------------------------------- */}
-      {/* 2) HUMANS VS AI (TABLE 형태) */}
-      {/* ------------------------------- */}
-      {activeTab === "humansVsAI" && (
+
+      {/* ------------------------------ */}
+      {/* 2) HUMANS vs AI */}
+      {/* ------------------------------ */}
+      {activeTab === "humansVsAi" && (
         <div className="tab-content">
-          {/* HUMAN TABLE */}
+
+          {/* Summary Card (기존 디자인 그대로 유지) */}
+          <div className="summary-cards">
+
+            <div className="summary-card">
+              <h4>HUMAN</h4>
+              <p>Total Votes: <strong>{summary.human.total_votes}</strong></p>
+              <p>Memes: <strong>{summary.human.count}</strong></p>
+              <p>Avg Votes: <strong>{summary.human.avg}</strong></p>
+            </div>
+
+            <div className="summary-card">
+              <h4>AI</h4>
+              <p>Total Votes: <strong>{summary.ai.total_votes}</strong></p>
+              <p>Memes: <strong>{summary.ai.count}</strong></p>
+              <p>Avg Votes: <strong>{summary.ai.avg}</strong></p>
+            </div>
+
+          </div>
+
+
           <h3>Human Top 10</h3>
           <table className="leaderboard-table">
             <thead>
@@ -387,14 +435,11 @@ const Leaderboard = () => {
               </tr>
             </thead>
             <tbody>
-              {humansVsAiData.human.map((entry, i) => (
+              {humanTop10.map((entry, i) => (
                 <tr key={entry.id}>
                   <td>{i + 1}</td>
                   <td>
-                    <img
-                      src={entry.image_url}
-                      style={{ width: "80px", borderRadius: "8px" }}
-                    />
+                    <img src={entry.image_url} style={{ width: '80px', borderRadius: '8px' }} />
                   </td>
                   <td>{entry.total_votes}</td>
                 </tr>
@@ -402,8 +447,8 @@ const Leaderboard = () => {
             </tbody>
           </table>
 
-          {/* AI TABLE */}
-          <h3>AI Top 10</h3>
+
+          <h3 style={{ marginTop: "30px" }}>AI Top 10</h3>
           <table className="leaderboard-table">
             <thead>
               <tr>
@@ -413,51 +458,58 @@ const Leaderboard = () => {
               </tr>
             </thead>
             <tbody>
-              {humansVsAiData.ai.map((entry, i) => (
+              {aiTop10.map((entry, i) => (
                 <tr key={entry.id}>
                   <td>{i + 1}</td>
                   <td>
-                    <img
-                      src={entry.image_url}
-                      style={{ width: "80px", borderRadius: "8px" }}
-                    />
+                    <img src={entry.image_url} style={{ width: '80px', borderRadius: '8px' }} />
                   </td>
                   <td>{entry.total_votes}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+
         </div>
       )}
 
-      {/* ------------------------------- */}
-      {/* 3) TOP MEMES — 이미지 갤러리 */}
-      {/* ------------------------------- */}
+
+      {/* ------------------------------ */}
+      {/* 3) TOP MEMES (갤러리 그대로) */}
+      {/* ------------------------------ */}
       {activeTab === "topMemes" && (
-        <div className="tab-content meme-grid-wrapper">
-          <h3>Human Memes</h3>
+        <div className="tab-content">
+
+          <h3>Top Human Memes</h3>
           <div className="meme-grid">
-            {topMemesData.human.map((meme, i) => (
+            {topHuman.map((meme, i) => (
               <div key={meme.id} className="meme-gallery-item">
-                <img src={meme.image_url} alt="" />
+                <img src={meme.image_url} />
                 <div className="meme-info">#{i + 1}</div>
               </div>
             ))}
           </div>
 
-          <h3>AI Memes</h3>
+          <h3 style={{ marginTop: "30px" }}>Top AI Memes</h3>
           <div className="meme-grid">
-            {topMemesData.ai.map((meme, i) => (
+            {topAi.map((meme, i) => (
               <div key={meme.id} className="meme-gallery-item">
-                <img src={meme.image_url} alt="" />
+                <img src={meme.image_url} />
                 <div className="meme-info">#{i + 1}</div>
               </div>
             ))}
           </div>
+
         </div>
       )}
-    </div>
-  );
-};
 
-export default Leaderboard;
+    </div>
+  )
+}
+
+export default Leaderboard
+
+// --- 파일 끝 ---
+
+
+
