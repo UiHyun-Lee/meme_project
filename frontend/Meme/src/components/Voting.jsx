@@ -244,15 +244,11 @@ const Voting = () => {
   const [message, setMessage] = useState("");
   const [activeIndex, setActiveIndex] = useState(0); // mobile slider
   const [currentTopic, setCurrentTopic] = useState(null);
-
-  // ✅ 쿠키 동의 상태 (처음에는 항상 null → 반드시 한 번 선택하게)
   const [cookieConsent, setCookieConsent] = useState(null);
-
-  // 모바일에서 "두 밈을 다 봤는지" 체크
   const [seenFirst, setSeenFirst] = useState(false);
   const [seenSecond, setSeenSecond] = useState(false);
 
-  // 디버그용
+  // Debug
   useEffect(() => {
     console.log("MEMES FROM API:", memes);
   }, [memes]);
@@ -276,8 +272,6 @@ const Voting = () => {
   };
 
   const handleRejectCookies = () => {
-    // 교수님 요구대로 “선택 전까지” 막는 거라면
-    // 여기서도 동의한 것으로 간주해도 됨 (필요시 "necessary"로 별도 분리 가능)
     localStorage.setItem("cookieConsent", "necessary");
     setCookieConsent("necessary");
   };

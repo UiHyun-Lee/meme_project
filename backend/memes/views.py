@@ -1115,7 +1115,7 @@ def vote_meme(request):
         winner.save()
         loser.save()
     except Exception as e:
-        print("❌ vote_meme internal error:", repr(e))
+        print("vote_meme internal error:", repr(e))
         return Response(
             {"error": "internal_error", "detail": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1141,16 +1141,9 @@ def report_meme(request):
     return Response({"success": True})
 
 
-# =========================
 # Leaderboard (meme 비교는 topic별)
-# =========================
 @api_view(["GET"])
 def leaderboard(request):
-    """
-    Leaderboard:
-    - 기본: 현재 Topic 내에서 rating 순
-    - ?topic=... 쿼리 파라미터로 특정 topic 지정 가능
-    """
     topic_param = request.query_params.get("topic")
 
     if topic_param:
