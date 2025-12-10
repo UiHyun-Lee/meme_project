@@ -187,7 +187,6 @@
 //
 // export default Leaderboard
 
-
 import React, { useEffect, useState } from "react";
 import {
   getLeaderboardMemes,
@@ -389,16 +388,16 @@ const Leaderboard = () => {
             <div className="summary-card">
               <h4>HUMAN</h4>
               <div className="summary-stats">
-                <p>Total Votes: <strong>{summary.human.total_votes}</strong></p>
-                <p>Memes: <strong>{summary.human.count}</strong></p>
+                <p>Total Votes: <strong>{summary?.human?.total_votes ?? 0}</strong></p>
+                <p>Memes: <strong>{summary?.human?.count ?? 0}</strong></p>
               </div>
             </div>
 
             <div className="summary-card">
               <h4>AI</h4>
               <div className="summary-stats">
-                <p>Total Votes: <strong>{summary.ai.total_votes}</strong></p>
-                <p>Memes: <strong>{summary.ai.count}</strong></p>
+                <p>Total Votes: <strong>{summary?.ai?.total_votes ?? 0}</strong></p>
+                <p>Memes: <strong>{summary?.ai?.count ?? 0}</strong></p>
               </div>
             </div>
           </div>
@@ -425,7 +424,9 @@ const Leaderboard = () => {
                     />
                   </td>
                   <td>
-                    <span className="type-badge human">HUMAN</span>
+                    <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
+                      {meme.created_by.toUpperCase()}
+                    </span>
                   </td>
                   <td>{meme.total_votes}</td>
                 </tr>
@@ -455,7 +456,9 @@ const Leaderboard = () => {
                     />
                   </td>
                   <td>
-                    <span className="type-badge ai">AI</span>
+                    <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
+                      {meme.created_by.toUpperCase()}
+                    </span>
                   </td>
                   <td>{meme.total_votes}</td>
                 </tr>
