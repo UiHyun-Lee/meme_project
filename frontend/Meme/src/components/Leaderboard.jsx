@@ -454,8 +454,7 @@ const Leaderboard = () => {
 
       {/* ===================================================== */}
       {/* 3) TOP 10 MEMES — unified gallery */}
-      {/* ===================================================== */}
-      {activeTab === "topMemes" && (
+{activeTab === "topMemes" && (
   <div className="tab-content">
 
     <h3>Top 10 Memes</h3>
@@ -484,9 +483,7 @@ const Leaderboard = () => {
         </div>
       ))}
     </div>
-
-  </div>
-)}
+  );
 };
 
 export default Leaderboard;
