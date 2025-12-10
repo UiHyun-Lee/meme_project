@@ -1056,7 +1056,7 @@ def vote_meme(request):
         loser.rating = new_r_l
 
         winner.total_votes = (winner.total_votes or 0) + 1
-        loser.total_votes = (loser.total_votes or 0) + 1
+        # loser.total_votes = (loser.total_votes or 0) + 1
 
         winner.save()
         loser.save()

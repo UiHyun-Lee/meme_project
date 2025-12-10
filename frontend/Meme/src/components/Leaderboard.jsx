@@ -206,15 +206,14 @@ const Leaderboard = () => {
   const [individualData, setIndividualData] = useState([]);
 
   const [summary, setSummary] = useState({ human: {}, ai: {} });
-  const [globalTop10, setGlobalTop10] = useState([]);
+  const [humanTop10, setHumanTop10] = useState([]);
+  const [aiTop10, setAiTop10] = useState([]);
 
   const [galleryTop10, setGalleryTop10] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
-  // -------------------------
   // INITIAL LOAD
-  // -------------------------
   useEffect(() => {
     initLeaderboard();
   }, []);
@@ -225,7 +224,7 @@ const Leaderboard = () => {
       const currentTopic = res?.data?.name || null;
 
       setSelectedTopic(currentTopic);
-      setTopicList([currentTopic]); // 확장 가능
+      setTopicList([currentTopic]);
 
       await loadIndividual(currentTopic);
       await loadHumansVsAI();
@@ -237,9 +236,7 @@ const Leaderboard = () => {
     }
   };
 
-  // -------------------------
-  // INDIVIDUAL RANKINGS (TOPIC BASED)
-  // -------------------------
+  // INDIVIDUAL RANKINGS
   const loadIndividual = async (topic) => {
     try {
       const res = await getLeaderboardMemes(topic);
@@ -254,22 +251,19 @@ const Leaderboard = () => {
     loadIndividual(topic);
   };
 
-  // -------------------------
-  // HUMANS VS AI (SUMMARY + GLOBAL TOP 10)
-  // -------------------------
+  // HUMANS VS AI
   const loadHumansVsAI = async () => {
     try {
       const res = await getLeaderboardHumansVsAI();
       setSummary(res.data.summary);
-      setGlobalTop10(res.data.top10);
+      setHumanTop10(res.data.human_top10);
+      setAiTop10(res.data.ai_top10);
     } catch (e) {
       console.error("Humans vs AI fetch error:", e);
     }
   };
 
-  // -------------------------
-  // TOP MEMES (UNIFIED TOP 10 GALLERY)
-  // -------------------------
+  // TOP MEMES GALLERY
   const loadTopMemes = async () => {
     try {
       const res = await getLeaderboardTopMemes();
@@ -306,9 +300,7 @@ const Leaderboard = () => {
         <span className="cursor">|</span>
       </p>
 
-      {/* ------------------------- */}
       {/* TAB NAVIGATION */}
-      {/* ------------------------- */}
       <div className="tab-navigation">
         <button
           className={activeTab === "individual" ? "active" : ""}
@@ -333,11 +325,11 @@ const Leaderboard = () => {
       </div>
 
       {/* ===================================================== */}
-      {/* 1) INDIVIDUAL RANKINGS (TOPIC-BASED) */}
+      {/* 1) INDIVIDUAL RANKINGS */}
       {/* ===================================================== */}
       {activeTab === "individual" && (
         <div className="tab-content">
-          {/* Topic Filter */}
+
           <div style={{ marginBottom: "10px" }}>
             {topicList.map((t) => (
               <button
@@ -351,7 +343,6 @@ const Leaderboard = () => {
             ))}
           </div>
 
-          {/* Table */}
           <table className="leaderboard-table">
             <thead>
               <tr>
@@ -361,7 +352,6 @@ const Leaderboard = () => {
                 <th>Votes</th>
               </tr>
             </thead>
-
             <tbody>
               {individualData.map((entry, i) => (
                 <tr key={entry.id}>
@@ -389,10 +379,11 @@ const Leaderboard = () => {
       )}
 
       {/* ===================================================== */}
-      {/* 2) HUMANS VS AI — summary + global top 10 table */}
+      {/* 2) HUMANS VS AI — summary + Human/AI top 10 */}
       {/* ===================================================== */}
       {activeTab === "humansVsAi" && (
         <div className="tab-content">
+
           {/* Summary Cards */}
           <div className="summary-cards">
             <div className="summary-card">
@@ -400,7 +391,6 @@ const Leaderboard = () => {
               <div className="summary-stats">
                 <p>Total Votes: <strong>{summary.human.total_votes}</strong></p>
                 <p>Memes: <strong>{summary.human.count}</strong></p>
-                <p>Avg Votes: <strong>{summary.human.avg}</strong></p>
               </div>
             </div>
 
@@ -409,14 +399,12 @@ const Leaderboard = () => {
               <div className="summary-stats">
                 <p>Total Votes: <strong>{summary.ai.total_votes}</strong></p>
                 <p>Memes: <strong>{summary.ai.count}</strong></p>
-                <p>Avg Votes: <strong>{summary.ai.avg}</strong></p>
               </div>
             </div>
           </div>
 
-          {/* Global Top 10 Table */}
-          <h3 style={{ marginTop: "30px" }}>Global Top 10 Memes</h3>
-
+          {/* HUMAN TOP 10 TABLE */}
+          <h3>Top Human Memes</h3>
           <table className="leaderboard-table">
             <thead>
               <tr>
@@ -426,25 +414,50 @@ const Leaderboard = () => {
                 <th>Votes</th>
               </tr>
             </thead>
-
             <tbody>
-              {globalTop10.map((entry, i) => (
-                <tr key={entry.id}>
+              {humanTop10.map((meme, i) => (
+                <tr key={meme.id}>
                   <td>{i + 1}</td>
                   <td>
                     <img
-                      src={entry.image_url}
+                      src={meme.image_url}
                       style={{ width: "80px", borderRadius: "8px" }}
                     />
                   </td>
                   <td>
-                    <span
-                      className={`type-badge ${entry.created_by.toLowerCase()}`}
-                    >
-                      {entry.created_by.toUpperCase()}
-                    </span>
+                    <span className="type-badge human">HUMAN</span>
                   </td>
-                  <td>{entry.total_votes}</td>
+                  <td>{meme.total_votes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* AI TOP 10 TABLE */}
+          <h3>Top AI Memes</h3>
+          <table className="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Meme</th>
+                <th>Type</th>
+                <th>Votes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aiTop10.map((meme, i) => (
+                <tr key={meme.id}>
+                  <td>{i + 1}</td>
+                  <td>
+                    <img
+                      src={meme.image_url}
+                      style={{ width: "80px", borderRadius: "8px" }}
+                    />
+                  </td>
+                  <td>
+                    <span className="type-badge ai">AI</span>
+                  </td>
+                  <td>{meme.total_votes}</td>
                 </tr>
               ))}
             </tbody>
@@ -453,34 +466,37 @@ const Leaderboard = () => {
       )}
 
       {/* ===================================================== */}
-      {/* 3) TOP 10 MEMES — unified gallery (pretty design restored) */}
+      {/* 3) TOP 10 MEMES — unified gallery */}
       {/* ===================================================== */}
       {activeTab === "topMemes" && (
         <div className="tab-content">
           <h3>Top 10 Memes</h3>
 
-<div className="meme-grid">
-  {galleryTop10.map((meme, i) => (
-    <div key={meme.id} className="meme-gallery-item">
-      <img src={meme.image_url} alt={`meme-${meme.id}`} />
+          <div className="meme-grid">
+            {galleryTop10.map((meme, i) => (
+              <div key={meme.id} className="meme-gallery-item">
+                <img
+                  src={meme.image_url}
+                  alt={`meme-${meme.id}`}
+                />
 
-      <div className="meme-info">
-        {/* Rank badge */}
-        <div className="meme-rank">#{i + 1}</div>
+                <div className="meme-info">
+                  <div className="meme-rank">#{i + 1}</div>
 
-        {/* Trophy */}
-        <div className="meme-likes">🏆 {meme.total_votes} votes</div>
+                  <div className="meme-likes">
+                    🏆 {meme.total_votes} votes
+                  </div>
 
-        {/* TYPE BADGE - SAME AS INDIVIDUAL TABLE */}
-        <div style={{ marginTop: "8px" }}>
-          <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
-            {meme.created_by.toUpperCase()}
-          </span>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
+                  <span
+                    className={`type-badge ${meme.created_by.toLowerCase()}`}
+                    style={{ marginTop: "6px", display: "inline-block" }}
+                  >
+                    {meme.created_by.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -488,5 +504,3 @@ const Leaderboard = () => {
 };
 
 export default Leaderboard;
-
-
