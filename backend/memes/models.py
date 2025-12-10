@@ -37,6 +37,7 @@ class Meme(models.Model):
     # humor_avg = models.FloatField(default=0)
     # creativity_avg = models.FloatField(default=0)
     # cultural_avg = models.FloatField(default=0)
+    rating = models.FloatField(default=1000)  # ELO score
     total_votes = models.IntegerField(default=0)
 
     def __str__(self):
