@@ -672,6 +672,7 @@ const SubmitMeme = () => {
           >
             Privacy Policy
           </a>
+          
         </div>
       </footer>
     </div>

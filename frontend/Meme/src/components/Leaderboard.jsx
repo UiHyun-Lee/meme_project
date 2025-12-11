@@ -446,69 +446,74 @@ const Leaderboard = () => {
             </div>
           </div>
 
-          {/* HUMAN TOP 10 */}
-          <h3>Top Human Memes</h3>
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Meme</th>
-                <th>Type</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {humanTop10.map((meme, i) => (
-                <tr key={meme.id}>
-                  <td>{i + 1}</td>
-                  <td>
-                    <img
-                      src={meme.image_url}
-                      style={{ width: "80px", borderRadius: "8px" }}
-                    />
-                  </td>
-                  <td>
-                    <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
-                      {meme.created_by.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>{meme.rating.toFixed(0)}</td>
+            {/* HUMAN TOP 10 */}
+            <h3>Top Human Memes</h3>
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Meme</th>
+                  <th>Type</th>
+                  <th>Rating</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {humanTop10.map((meme, i) => (
+                  <tr key={meme.id}>
+                    <td>{i + 1}</td>
+                    <td>
+                      <img
+                        src={meme.image_url}
+                        className="user-avatar"
+                        style={{ width: "80px", borderRadius: "8px", cursor: "pointer" }}
+                        onClick={() => setPreviewImage(meme.image_url)}
+                      />
+                    </td>
+                    <td>
+                      <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
+                        {meme.created_by.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>{meme.rating.toFixed(0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* AI TOP 10 */}
-          <h3>Top AI Memes</h3>
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Meme</th>
-                <th>Type</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {aiTop10.map((meme, i) => (
-                <tr key={meme.id}>
-                  <td>{i + 1}</td>
-                  <td>
-                    <img
-                      src={meme.image_url}
-                      style={{ width: "80px", borderRadius: "8px" }}
-                    />
-                  </td>
-                  <td>
-                    <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
-                      {meme.created_by.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>{meme.rating.toFixed(0)}</td>
+            {/* AI TOP 10 */}
+            <h3>Top AI Memes</h3>
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Meme</th>
+                  <th>Type</th>
+                  <th>Rating</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {aiTop10.map((meme, i) => (
+                  <tr key={meme.id}>
+                    <td>{i + 1}</td>
+                    <td>
+                      <img
+                        src={meme.image_url}
+                        className="user-avatar"
+                        style={{ width: "80px", borderRadius: "8px", cursor: "pointer" }}
+                        onClick={() => setPreviewImage(meme.image_url)}
+                      />
+                    </td>
+                    <td>
+                      <span className={`type-badge ${meme.created_by.toLowerCase()}`}>
+                        {meme.created_by.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>{meme.rating.toFixed(0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
         </div>
       )}
 
@@ -571,6 +576,29 @@ const Leaderboard = () => {
           </div>
         </div>
       )}
+
+      <footer className="site-footer">
+            <div className="footer-links">
+              <a
+                href="https://www.tu-darmstadt.de/impressum/index.de.jsp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Impressum
+              </a>
+
+              <span className="footer-separator">|</span>
+
+              <a
+                href="https://www.tu-darmstadt.de/datenschutzerklaerung.de.jsp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Privacy
+              </a>
+
+            </div>
+          </footer>
 
 
     </div>
