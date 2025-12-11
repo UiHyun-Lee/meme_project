@@ -138,6 +138,6 @@ export const googleLogin = (id_token) =>
 
 // weekly topic
 export const getCurrentTopic = () => API.get("memes/topic/current/");
-export const getTopics = () => api.get("memes/topic/topics/");
+export const getTopics = () => API.get("memes/topic/topics/");
 
 export default API;
