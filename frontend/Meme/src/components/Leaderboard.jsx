@@ -747,18 +747,18 @@ const initLeaderboard = async () => {
         Topic:
       </label>
 
-      <select
-        id="topic-select"
-        className="topic-dropdown"
-        value={selectedTopic || ""}
-        onChange={(e) => handleTopicChange(e.target.value)}
-      >
-        {topicsFromBackend.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
+<select
+  id="topic-select"
+  className="topic-dropdown"
+  value={selectedTopic || ""}
+  onChange={(e) => handleTopicChange(e.target.value)}
+>
+  {topicList.map((t) => (
+    <option key={t} value={t}>
+      {t}
+    </option>
+  ))}
+</select>
     </div>
 
           <table className="leaderboard-table">
