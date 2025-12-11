@@ -196,6 +196,13 @@ import {
 } from "../api";
 import Typewriter from "./Typewriter";
 
+// ganz oben in Leaderboard.jsx, außerhalb der Komponente
+const DEFAULT_TOPICS = [
+  "Social media ban in Australia",
+  "FIFA World Cup 2026",
+  "Germany's new military plan"
+];
+
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState("individual");
 
@@ -212,13 +219,17 @@ const Leaderboard = () => {
 
   const [loading, setLoading] = useState(true);
 
+  const [previewImage, setPreviewImage] = useState(null);
+
+  const closePreview = () => setPreviewImage(null);
+
   // INITIAL LOAD
   useEffect(() => {
     initLeaderboard();
   }, []);
 
   const initLeaderboard = async () => {
-    try {
+    /**try {
       const res = await getCurrentTopic();
       const currentTopic = res?.data?.name || null;
 
@@ -232,7 +243,30 @@ const Leaderboard = () => {
       console.error("Leaderboard init error:", e);
     } finally {
       setLoading(false);
+    } KANNST WIEDER EINKOMMENTIEREN; IST TEMPORÄR**/
+
+    /*--------unterer Block ist temporär -----*/
+    try {
+      const res = await getCurrentTopic();
+      const currentTopicFromApi = res?.data?.name;
+
+      const currentTopic = currentTopicFromApi || DEFAULT_TOPICS[0];
+
+      setSelectedTopic(currentTopic);
+      // falls API später mehrere Topics liefert, kannst du das mergen
+      setTopicList(DEFAULT_TOPICS);
+
+      await loadIndividual(currentTopic);
+      await loadHumansVsAI();
+      await loadTopMemes();
+    } catch (e) {
+      console.error("Leaderboard init error:", e);
+      setSelectedTopic(DEFAULT_TOPICS[0]);
+      setTopicList(DEFAULT_TOPICS);
+    } finally {
+      setLoading(false);
     }
+    /*-------------*/
   };
 
   // INDIVIDUAL RANKINGS
@@ -329,17 +363,26 @@ const Leaderboard = () => {
       {activeTab === "individual" && (
         <div className="tab-content">
 
-          <div style={{ marginBottom: "10px" }}>
-            {topicList.map((t) => (
-              <button
-                key={t}
-                onClick={() => handleTopicChange(t)}
-                className={selectedTopic === t ? "active" : ""}
-                style={{ margin: "0 5px" }}
-              >
-                {t}
-              </button>
-            ))}
+          {/* Topic-Auswahl als Dropdown */}
+          <div className="topic-dropdown-wrapper">
+            <label
+              htmlFor="topic-select"
+              className="topic-dropdown-label"
+            >
+              Topic:
+            </label>
+            <select
+              id="topic-select"
+              className="topic-dropdown"
+              value={selectedTopic || ""}
+              onChange={(e) => handleTopicChange(e.target.value)}
+            >
+              {topicList.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </div>
 
           <table className="leaderboard-table">
@@ -359,8 +402,10 @@ const Leaderboard = () => {
                     <img
                       src={entry.image_url}
                       className="user-avatar"
-                      style={{ width: "80px", borderRadius: "8px" }}
+                      style={{ width: "80px", borderRadius: "8px", cursor: "pointer" }}
+                      onClick={() => setPreviewImage(entry.image_url)}
                     />
+
                   </td>
                   <td>
                     <span
@@ -480,7 +525,10 @@ const Leaderboard = () => {
                 <img
                   src={meme.image_url}
                   alt={`meme-${meme.id}`}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setPreviewImage(meme.image_url)}
                 />
+
 
                 <div className="meme-info">
                   <div className="meme-rank">#{i + 1}</div>
@@ -501,6 +549,29 @@ const Leaderboard = () => {
           </div>
         </div>
       )}
+
+      {previewImage && (
+        <div className="image-modal" onClick={closePreview}>
+          <div
+            className="image-modal-inner"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="image-modal-close"
+              onClick={closePreview}
+              aria-label="Close preview"
+            >
+              ×
+            </button>
+            <img
+              src={previewImage}
+              className="image-modal-content"
+              alt="Preview"
+            />
+          </div>
+        </div>
+      )}
+
 
     </div>
   );
