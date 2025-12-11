@@ -619,20 +619,26 @@ const initLeaderboard = async () => {
     const topicsRes = await getTopics();
     const topicNames = topicsRes.data.map(t => t.name);
 
-    if (topicNames.length === 0) {
-      console.warn("⚠ No topics found in backend — leaderboard may be empty.");
-    }
-
     setTopicList(topicNames);
 
-    const res = await getCurrentTopic();
-    const currentTopic = res?.data?.name || topicNames[0] || null;
+    const currentRes = await getCurrentTopic();
+    const weeklyTopic = currentRes?.data?.name;
 
-    setSelectedTopic(currentTopic);
+    let selected = null;
 
-    await loadIndividual(currentTopic);
-    await loadHumansVsAI();
-    await loadTopMemes();
+    if (weeklyTopic && topicNames.includes(weeklyTopic)) {
+      selected = weeklyTopic;
+    } else if (topicNames.length > 0) {
+      selected = topicNames[0];
+    }
+
+    setSelectedTopic(selected);
+
+    if (selected) {
+      await loadIndividual(selected);
+      await loadHumansVsAI();
+      await loadTopMemes();
+    }
 
   } catch (e) {
     console.error("Leaderboard init error:", e);
