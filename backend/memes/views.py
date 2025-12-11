@@ -592,6 +592,11 @@ def current_topic_view(request):
         status=status.HTTP_200_OK,
     )
 
+@api_view(["GET"])
+def topic_list(request):
+    topics = WeeklyTopic.objects.all().order_by("id")
+    return Response([{"id": t.id, "name": t.name} for t in topics])
+
 
 # =========================
 # Single AI meme generate

@@ -591,34 +591,22 @@ import {
   getLeaderboardHumansVsAI,
   getLeaderboardTopMemes,
   getCurrentTopic,
+  getTopics,
 } from "../api";
 import Typewriter from "./Typewriter";
 
-// ganz oben in Leaderboard.jsx, außerhalb der Komponente
-const DEFAULT_TOPICS = [
-  "Social media ban in Australia",
-  "FIFA World Cup 2026",
-  "Germany's new military plan"
-];
-
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState("individual");
-
+  const [topicsFromBackend, setTopicsFromBackend] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [topicList, setTopicList] = useState([]);
-
   const [individualData, setIndividualData] = useState([]);
-
   const [summary, setSummary] = useState({ human: {}, ai: {} });
   const [humanTop10, setHumanTop10] = useState([]);
   const [aiTop10, setAiTop10] = useState([]);
-
   const [galleryTop10, setGalleryTop10] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [previewImage, setPreviewImage] = useState(null);
-
   const closePreview = () => setPreviewImage(null);
 
   // INITIAL LOAD
@@ -626,46 +614,32 @@ const Leaderboard = () => {
     initLeaderboard();
   }, []);
 
-  const initLeaderboard = async () => {
-    /**try {
-      const res = await getCurrentTopic();
-      const currentTopic = res?.data?.name || null;
+const initLeaderboard = async () => {
+  try {
+    const topicsRes = await getTopics();
+    const topicNames = topicsRes.data.map(t => t.name);
 
-      setSelectedTopic(currentTopic);
-      setTopicList([currentTopic]);
-
-      await loadIndividual(currentTopic);
-      await loadHumansVsAI();
-      await loadTopMemes();
-    } catch (e) {
-      console.error("Leaderboard init error:", e);
-    } finally {
-      setLoading(false);
-    } KANNST WIEDER EINKOMMENTIEREN; IST TEMPORÄR**/
-
-    /*--------unterer Block ist temporär -----*/
-    try {
-      const res = await getCurrentTopic();
-      const currentTopicFromApi = res?.data?.name;
-
-      const currentTopic = currentTopicFromApi || DEFAULT_TOPICS[0];
-
-      setSelectedTopic(currentTopic);
-      // falls API später mehrere Topics liefert, kannst du das mergen
-      setTopicList(DEFAULT_TOPICS);
-
-      await loadIndividual(currentTopic);
-      await loadHumansVsAI();
-      await loadTopMemes();
-    } catch (e) {
-      console.error("Leaderboard init error:", e);
-      setSelectedTopic(DEFAULT_TOPICS[0]);
-      setTopicList(DEFAULT_TOPICS);
-    } finally {
-      setLoading(false);
+    if (topicNames.length === 0) {
+      console.warn("⚠ No topics found in backend — leaderboard may be empty.");
     }
-    /*-------------*/
-  };
+
+    setTopicList(topicNames);
+
+    const res = await getCurrentTopic();
+    const currentTopic = res?.data?.name || topicNames[0] || null;
+
+    setSelectedTopic(currentTopic);
+
+    await loadIndividual(currentTopic);
+    await loadHumansVsAI();
+    await loadTopMemes();
+
+  } catch (e) {
+    console.error("Leaderboard init error:", e);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // INDIVIDUAL RANKINGS
   const loadIndividual = async (topic) => {
@@ -762,26 +736,24 @@ const Leaderboard = () => {
         <div className="tab-content">
 
           {/* Topic-Auswahl als Dropdown */}
-          <div className="topic-dropdown-wrapper">
-            <label
-              htmlFor="topic-select"
-              className="topic-dropdown-label"
-            >
-              Topic:
-            </label>
-            <select
-              id="topic-select"
-              className="topic-dropdown"
-              value={selectedTopic || ""}
-              onChange={(e) => handleTopicChange(e.target.value)}
-            >
-              {topicList.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+    <div className="topic-dropdown-wrapper">
+      <label htmlFor="topic-select" className="topic-dropdown-label">
+        Topic:
+      </label>
+
+      <select
+        id="topic-select"
+        className="topic-dropdown"
+        value={selectedTopic || ""}
+        onChange={(e) => handleTopicChange(e.target.value)}
+      >
+        {topicsFromBackend.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </div>
 
           <table className="leaderboard-table">
             <thead>

@@ -16,7 +16,7 @@ from memes.views import (
     leaderboard_memes,
     leaderboard_top_memes,
     leaderboard_humans_vs_ai,
-    current_topic_view,
+    current_topic_view, topic_list,
 )
 from evaluations.views import EvaluationViewSet
 from memes.auth_views import GoogleLoginView
@@ -71,6 +71,7 @@ urlpatterns = [
 
     # Get the currently active weekly topic
     path("api/memes/topic/current/", current_topic_view),
+    path("api/memes/topic/topics/", topic_list),
 
     # Random human vs AI meme for voting (same topic only)
     path('api/memes/random/', random_memes),
