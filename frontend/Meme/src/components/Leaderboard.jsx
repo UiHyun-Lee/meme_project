@@ -619,7 +619,9 @@ const initLeaderboard = async () => {
     const topicsRes = await getTopics();
     const topicNames = topicsRes.data.map(t => t.name);
 
+    // topicList + dropdown용 배열 모두 업데이트
     setTopicList(topicNames);
+    setTopicsFromBackend(topicNames);
 
     const currentRes = await getCurrentTopic();
     const weeklyTopic = currentRes?.data?.name;
@@ -646,6 +648,7 @@ const initLeaderboard = async () => {
     setLoading(false);
   }
 };
+
 
   // INDIVIDUAL RANKINGS
   const loadIndividual = async (topic) => {
