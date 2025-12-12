@@ -377,6 +377,7 @@ html, body {
   border: 0.1875rem solid rgba(30, 144, 255, 0.6);
   box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .type-filters {
@@ -419,14 +420,16 @@ html, body {
 
 /* Tabelle */
 .leaderboard-table {
-  width: 100%;
   border-collapse: collapse;
   margin: 1.25rem 0;
   background-color: rgba(0, 0, 0, 0.3);
   color: white;
   border-radius: 0.5rem;
   overflow: hidden;
+  overflow-y: hidden;
   table-layout: fixed;
+  width: 100%; /* Stellt sicher, dass die Tabelle 100% des Containers nutzt */
+  max-width: 100%; 
 }
 
 .leaderboard-table th,
@@ -976,7 +979,9 @@ html, body {
 
 .tab-content {
   margin-top: 1.25rem;
+  overflow-x: hidden;
   overflow: hidden;
+  width: 100%;
 }
 
 /* ========================= */
@@ -1074,11 +1079,35 @@ button:hover {
   }
 
   .voting-container,
-  .leaderboard-container,
   .submit-container,
   .about-container {
     margin: 4.375rem 0.9375rem 1.25rem 0.9375rem;
     padding: 0.9375rem;
+  }
+
+  .leaderboard-container {
+    max-width: 100%;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    overflow: hidden;
+    overflow-x: hidden;
+  }
+
+  .leaderboard-table {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    overflow: hidden;
+    overflow-x: hidden;
+  }
+
+  .tab-content {
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: hidden;
   }
 
   .meme-image-natural {
@@ -1210,12 +1239,7 @@ button:hover {
   }
 }
 
-@media (max-width: 30rem) {
-  .leaderboard-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
+@media (max-width: 48rem) {
 
   .tab-navigation {
     flex-direction: column;
@@ -1658,3 +1682,4 @@ p, li, a {
   align-items: center;
   justify-content: center;
 }
+
