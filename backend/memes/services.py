@@ -447,7 +447,7 @@ import json
 import os
 from io import BytesIO
 from typing import Optional
-
+import base64
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import cloudinary.uploader
@@ -634,10 +634,17 @@ Rules:
 
     raw_for_log = ""
 
+    # 1) 항상 https로
+    template_url_https = _force_https(template_url)
+
+    # 2) 우선 https URL로 시도
+    image_payload_url = template_url_https
+
+    # 3) 혹시 실패하면 data URL(base64)로 fallback 하도록 try/except 2단계 호출
     try:
         response = client.chat.completions.create(
             model=model_name,
-            temperature=0.1,  # or 0
+            temperature=0.1,
             response_format={"type": "json_object"},
             messages=[
                 {
@@ -652,15 +659,49 @@ Rules:
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt.strip()},
-                        {"type": "image_url", "image_url": {"url": template_url}},
+                        {"type": "image_url", "image_url": {"url": image_payload_url}},
                     ],
                 },
             ],
             max_tokens=1500,
         )
     except Exception as e:
-        print("OpenAI error:", repr(e))
-        return {"error": f"openai_error: {str(e)}"}
+        # URL 방식이 실패하면, base64(data URL) 방식으로 재시도
+        print("OpenAI URL image failed, retrying with data URL:", repr(e))
+
+        try:
+            data_url = _image_url_to_data_url(template_url_https)
+        except Exception as dl_err:
+            print("Image download failed:", repr(dl_err))
+            return {"error": f"image_download_error: {str(dl_err)}"}
+
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                temperature=0.1,
+                response_format={"type": "json_object"},
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a JSON generator. "
+                            "You MUST respond with a single valid JSON object only. "
+                            "No explanations, no comments, no extra text."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt.strip()},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    },
+                ],
+                max_tokens=1500,
+            )
+        except Exception as e2:
+            print("OpenAI data URL retry failed:", repr(e2))
+            return {"error": f"openai_error: {str(e2)}"}
 
     msg = response.choices[0].message
 
@@ -1059,3 +1100,22 @@ def ensure_ai_balance_for_topic(
         except Exception as e:
             print("Meme create error during balance:", repr(e))
             continue
+
+def _force_https(url: str) -> str:
+    if not url:
+        return url
+    return url.replace("http://", "https://")
+
+
+def _image_url_to_data_url(url: str) -> str:
+    """
+    Download image ourselves and convert to data URL (base64),
+    so OpenAI doesn't need to fetch Cloudinary directly.
+    """
+    url = _force_https(url)
+    r = requests.get(url, timeout=20, headers={"User-Agent": "meme-battle-bot/1.0"})
+    r.raise_for_status()
+
+    content_type = r.headers.get("Content-Type", "image/png")
+    b64 = base64.b64encode(r.content).decode("utf-8")
+    return f"data:{content_type};base64,{b64}"
