@@ -693,104 +693,196 @@ def topic_list(request):
 #
 #
 # Multiple AI memes generate
+import time
+import random
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+
 @api_view(["POST"])
 def generate_multiple_ai_memes(request):
+    """
+    안정화 버전:
+    - count 최대 2 (기본 2)
+    - OpenAI 호출 최대 2
+    - designs/blocks 방어적 체크
+    - 전체 처리 시간 soft limit
+    """
+    # ---- 전체 요청 soft time limit (초) ----
+    # (Railway/Gunicorn timeout보다 조금 낮게 잡는 게 좋음)
+    SOFT_TIME_LIMIT = 45
+
+    t0 = time.time()
+
+    # 1) 현재 토픽
     try:
         current_topic = get_current_topic_or_400()
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 2) count 파싱 + 강제 제한
     try:
-        count = int(request.data.get("count", 3))
+        count = int(request.data.get("count", 2))
     except Exception:
-        count = 3
+        count = 2
 
-    count = max(1, min(count, 5))
+    if count < 1:
+        count = 1
 
+    # ✅ 안정화: 서버에서 최대 2로 제한 (필요하면 3으로 올려도 됨)
+    if count > 2:
+        count = 2
+
+    # 3) 템플릿 필터
     template_ids = request.data.get("template_ids") or []
     if template_ids:
-        templates = list(MemeTemplate.objects.filter(id__in=template_ids))
+        templates_qs = MemeTemplate.objects.filter(id__in=template_ids)
     else:
-        templates = list(MemeTemplate.objects.all())
+        templates_qs = MemeTemplate.objects.all()
 
+    templates = list(templates_qs)
     if not templates:
-        return Response({"error": "No templates available"}, status=400)
+        return Response({"error": "No templates available"}, status=status.HTTP_400_BAD_REQUEST)
 
     created_memes = []
 
-    max_openai_calls = 3
+    # 4) OpenAI 호출 제한
+    MAX_OPENAI_CALLS = 2
     openai_calls = 0
-    max_iterations = count * 2
 
-    for _ in range(max_iterations):
+    # 5) 템플릿 선택 시도 횟수 (너무 무한루프 방지)
+    MAX_ITERATIONS = max(4, count * 3)
+
+    # 이미 만든 template 중복을 줄이기(선택)
+    used_template_ids = set()
+
+    for _ in range(MAX_ITERATIONS):
+        # 시간 제한 체크
+        if time.time() - t0 > SOFT_TIME_LIMIT:
+            print("generate_multiple_ai_memes: soft time limit reached, breaking.")
+            break
+
         if len(created_memes) >= count:
             break
-        if openai_calls >= max_openai_calls:
+        if openai_calls >= MAX_OPENAI_CALLS:
             break
 
+        # 템플릿 선택 (중복 방지 시도)
         template = random.choice(templates)
+        if template.id in used_template_ids and len(used_template_ids) < len(templates):
+            # 중복이면 한번 더 다른 거 시도
+            template = random.choice(templates)
+        used_template_ids.add(template.id)
 
+        category_name = template.category.name if template.category else ""
+        template_desc = template.description or ""
+
+        # 템플릿 이미지 URL
         try:
             template_image_url = template.image.url
         except Exception:
             template_image_url = str(template.image)
-            if not template_image_url:
-                continue
 
+        if not template_image_url:
+            continue
+
+        # ✅ https 강제
+        template_image_url = template_image_url.replace("http://", "https://")
+
+        print("generate_multiple_ai_memes: OpenAI call for template", template.id)
+
+        # 6) OpenAI 호출
         design = generate_ai_meme_design(
             topic=current_topic,
-            category_name=template.category.name if template.category else "",
-            template_desc=template.description or "",
+            category_name=category_name,
+            template_desc=template_desc,
             template_url=template_image_url,
         )
         openai_calls += 1
 
+        if not isinstance(design, dict):
+            print("AI design invalid type:", type(design))
+            continue
+
         if "error" in design:
+            print("AI design error for template", template.id, design)
             continue
 
-        designs = design.get("designs") or []
-        if not designs:
+        # ✅ designs 방어 체크
+        designs = design.get("designs")
+        if not isinstance(designs, list) or len(designs) == 0:
+            print("AI design has no designs:", design)
             continue
 
-        # 🔑 핵심: blocks 묶음 하나 = 밈 하나
-        for blocks in designs:
-            if len(created_memes) >= count:
-                break
-            if not isinstance(blocks, list) or not blocks:
-                continue
+        # ✅ 안정화: designs 중 첫 번째 1개만 사용
+        blocks = designs[0]
+        if not isinstance(blocks, list) or len(blocks) == 0:
+            print("AI design first blocks invalid:", blocks)
+            continue
 
-            try:
-                public_id = apply_ai_text_to_image(template_image_url, blocks)
-            except Exception as e:
-                print("apply_ai_text_to_image error:", repr(e))
+        # blocks 내부도 최소한 검증(선택이지만 추천)
+        valid_blocks = []
+        for b in blocks:
+            if not isinstance(b, dict):
                 continue
-
-            full_caption = " / ".join([b.get("text", "") for b in blocks]).strip()
-
-            try:
-                meme = Meme.objects.create(
-                    template=template,
-                    image=public_id,
-                    caption=full_caption,
-                    created_by="ai",
-                    format="macro",
-                    topic=current_topic,
-                )
-                created_memes.append(meme)
-            except Exception as e:
-                print("Meme create error:", repr(e))
+            text = (b.get("text") or "").strip()
+            box = b.get("box")
+            if not text or not isinstance(box, dict):
                 continue
+            valid_blocks.append(b)
+
+        if not valid_blocks:
+            print("No valid blocks after filtering.")
+            continue
+
+        # 7) 렌더링 + 업로드
+        try:
+            public_id = apply_ai_text_to_image(template_image_url, valid_blocks)
+        except Exception as e:
+            print("apply_ai_text_to_image error:", repr(e))
+            continue
+
+        # 8) DB 저장
+        full_caption = " / ".join([(b.get("text") or "").strip() for b in valid_blocks]).strip()
+        if not full_caption:
+            full_caption = "AI meme"
+
+        try:
+            meme = Meme.objects.create(
+                template=template,
+                image=public_id,      # Cloudinary public_id
+                caption=full_caption,
+                created_by="ai",
+                format="macro",
+                topic=current_topic,
+            )
+            created_memes.append(meme)
+        except Exception as e:
+            print("Meme create error:", repr(e))
+            continue
 
     if not created_memes:
         return Response(
-            {"error": "AI memes could not be generated"},
+            {
+                "error": "AI memes could not be generated",
+                "detail": "No memes were created within limits. Try again.",
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+    data = MemeSerializer(created_memes, many=True).data
     return Response(
-        MemeSerializer(created_memes, many=True).data,
+        {
+            "created": len(created_memes),
+            "requested": count,
+            "openai_calls": openai_calls,
+            "topic": current_topic,
+            "memes": data,
+        },
         status=status.HTTP_201_CREATED,
     )
+
 
 
 @api_view(["POST"])
