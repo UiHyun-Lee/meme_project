@@ -694,9 +694,7 @@ def generate_ai_meme(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# =========================
 # Multiple AI memes generate
-# =========================
 @api_view(["POST"])
 def generate_multiple_ai_memes(request):
     try:
@@ -998,19 +996,13 @@ def random_memes(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def vote_meme(request):
-    """
-    ELO 기반 투표:
-    - 프론트에서 winner_id, loser_id 둘 다 보냄
-    - 같은 topic 안의 두 밈만 비교
-    """
-    print("🔹 VOTE REQUEST DATA:", request.data)
+    print("VOTE REQUEST DATA:", request.data)
 
     winner_id = request.data.get("winner_id")
     loser_id = request.data.get("loser_id")
 
-    # 1) 파라미터 체크
     if not winner_id or not loser_id:
-        print("❌ missing winner_id/loser_id")
+        print("missing winner_id/loser_id")
         return Response(
             {"error": "winner_id and loser_id required"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -1021,7 +1013,7 @@ def vote_meme(request):
         winner_id = int(winner_id)
         loser_id = int(loser_id)
     except (TypeError, ValueError):
-        print("❌ invalid id values:", winner_id, loser_id)
+        print("invalid id values:", winner_id, loser_id)
         return Response(
             {"error": "winner_id and loser_id must be integers"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -1038,12 +1030,12 @@ def vote_meme(request):
         winner = Meme.objects.get(id=winner_id)
         loser = Meme.objects.get(id=loser_id)
     except Meme.DoesNotExist:
-        print("❌ meme not found:", winner_id, loser_id)
+        print("meme not found:", winner_id, loser_id)
         return Response({"error": "meme not found"}, status=status.HTTP_404_NOT_FOUND)
 
     # 4) topic 일치 확인 (안 맞으면 비교 X)
     if winner.topic != loser.topic:
-        print("❌ topic mismatch:", winner.topic, loser.topic)
+        print("topic mismatch:", winner.topic, loser.topic)
         return Response(
             {"error": "memes must belong to the same topic"},
             status=status.HTTP_400_BAD_REQUEST,

@@ -6,5 +6,5 @@ from .models import WeeklyTopic
 def get_current_topic_or_400() -> str:
     topic_obj = WeeklyTopic.get_current_topic()
     if not topic_obj:
-        raise ValidationError("Non active topics now!")
+        raise ValidationError("No active topics now!")
     return topic_obj.name
