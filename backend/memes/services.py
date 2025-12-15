@@ -801,21 +801,20 @@ def _wrap_text_to_width(draw, text, font, max_width, stroke_width=0):
 
 
 def apply_ai_text_to_image(template_url: str, captions: list) -> str:
+    import re
+    import os
+    from io import BytesIO
+    import requests
+    from PIL import Image, ImageDraw, ImageFont
+    import cloudinary.uploader
+    from django.conf import settings
+
     resp = requests.get(template_url, timeout=15)
     resp.raise_for_status()
 
     image = Image.open(BytesIO(resp.content)).convert("RGB")
     draw = ImageDraw.Draw(image)
     W, H = image.size
-
-    # 얼굴 감지 (없으면 [])
-    face_rects = _detect_faces_pil(image)
-
-    # 얼굴 영역을 조금 크게 잡아서(패딩) 텍스트가 가까이 붙는 것도 방지
-    if face_rects:
-        pad_x = int(W * 0.06)
-        pad_y = int(H * 0.06)
-        face_rects = [_inflate_rect(r, pad_x, pad_y, W, H) for r in face_rects]
 
     FONT_FILES = {
         "impact": "MarkerFelt.ttc",
@@ -827,181 +826,131 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         if font_face not in FONT_FILES:
             font_face = "impact"
 
-        font_file = FONT_FILES[font_face]
-        font_path = os.path.join(settings.BASE_DIR, "fonts", font_file)
-
+        font_path = os.path.join(settings.BASE_DIR, "fonts", FONT_FILES[font_face])
         try:
             return ImageFont.truetype(font_path, font_size)
-        except Exception as e:
-            print(f"⚠ font load failed({font_path})", e)
+        except Exception:
             return ImageFont.load_default()
 
-    def normalize_pos(pos: str, text: str):
-        pos = (pos or "bottom").lower().strip()
-        if pos not in ("top", "center", "bottom"):
-            pos = "bottom"
+    def wrap_text(draw, text, font, max_width, stroke_width=0):
+        words = text.split()
+        if not words:
+            return ""
 
-        # center는 얼굴/주요오브젝트 가릴 확률이 커서 기본 회피
-        if pos == "center":
-            pos = "top" if len(text) <= 35 else "bottom"
-        return pos
+        lines = []
+        current = words[0]
+        for w in words[1:]:
+            test = current + " " + w
+            bbox = draw.textbbox((0, 0), test, font=font, stroke_width=stroke_width)
+            if bbox[2] - bbox[0] <= max_width:
+                current = test
+            else:
+                lines.append(current)
+                current = w
+        lines.append(current)
+        return "\n".join(lines)
 
     def choose_color_defaults(color: str):
-        color = color or "white"
         lower = str(color).lower()
         if lower in ["white", "#ffffff", "fff"]:
             return color, "black"
         return color, "white"
 
-    # 후보 위치를 여러 개 시험해서(좌/중/우 + top/bottom) 얼굴 안 가리는 걸 선택
-    def candidate_positions(base_pos: str, text_w: int, text_h: int):
-        margin_y = int(H * 0.05)
-        margin_x = int(W * 0.05)
-
-        # x 후보: left / center / right
-        x_left = margin_x
-        x_center = int((W - text_w) / 2)
-        x_right = int(W - text_w - margin_x)
-
-        # y 후보: top / bottom
-        y_top = margin_y
-        y_bottom = int(H - text_h - margin_y)
-
-        # 기본 포지션 우선순위
-        if base_pos == "top":
-            order = [
-                (x_center, y_top),
-                (x_left, y_top),
-                (x_right, y_top),
-                (x_center, y_bottom),
-                (x_left, y_bottom),
-                (x_right, y_bottom),
-            ]
-        elif base_pos == "bottom":
-            order = [
-                (x_center, y_bottom),
-                (x_left, y_bottom),
-                (x_right, y_bottom),
-                (x_center, y_top),
-                (x_left, y_top),
-                (x_right, y_top),
-            ]
-        else:
-            # center는 이미 normalize에서 거의 안 오지만, 혹시 몰라 fallback
-            y_center = int((H - text_h) / 2)
-            order = [
-                (x_center, y_center),
-                (x_left, y_top),
-                (x_right, y_top),
-                (x_left, y_bottom),
-                (x_right, y_bottom),
-            ]
-
-        # 화면 밖으로 나가지 않게 클램프
-        fixed = []
-        for x, y in order:
-            x = max(0, min(W - text_w, x))
-            y = max(0, min(H - text_h, y))
-            fixed.append((x, y))
-        return fixed
-
-    # 텍스트를 최대 폭에 맞게 줄바꿈
-    def wrap_text(draw, text, font, max_width, stroke_width=0):
-        return _wrap_text_to_width(draw, text, font, max_width, stroke_width=stroke_width)
-
+    # =========================
+    # 🔥 핵심: BOX 우선 렌더링
+    # =========================
     for cap in captions:
         text = (cap.get("text") or "").strip()
         if not text:
             continue
 
-        # ASCII만 (기존 로직 유지)
         text = re.sub(r"[^A-Za-z0-9 .,!?\"':;()\-_/]", "", text)
         if not text.strip():
             continue
 
+        font_face = (cap.get("font_face") or "impact").lower().strip()
         emphasis = (cap.get("emphasis") or "normal").lower().strip()
-        if emphasis not in ["normal", "bold", "italic", "bold_italic"]:
-            emphasis = "normal"
+        color, stroke_color = choose_color_defaults(cap.get("color", "white"))
 
-        base_font_size = cap.get("font_size")
-        if not base_font_size:
-            base_font_size = int(H * 0.10)
+        stroke_width = 6 if emphasis in ["bold", "bold_italic"] else 4
 
-        if emphasis in ["bold", "bold_italic"]:
-            base_font_size = int(base_font_size * 1.05)
-
-        # 너무 작으면 가독성 깨짐
+        # 기본 폰트 크기
+        base_font_size = int(H * 0.10)
         if base_font_size < 48:
             base_font_size = 48
 
-        font_face = (cap.get("font_face") or "impact").lower().strip()
-        color = cap.get("color", "white")
-        color, stroke_color = choose_color_defaults(color)
+        box = cap.get("box")
 
-        stroke_width = cap.get("stroke_width")
-        if not stroke_width:
-            stroke_width = 6 if emphasis in ["bold", "bold_italic"] else 4
+        # =====================================
+        # ✅ CASE 1: OpenAI box가 있는 경우
+        # =====================================
+        if isinstance(box, dict):
+            try:
+                bx = float(box["x"])
+                by = float(box["y"])
+                bw = float(box["w"])
+                bh = float(box["h"])
+            except Exception:
+                box = None
 
-        pos = normalize_pos(cap.get("position"), text)
+        if isinstance(box, dict):
+            x0 = int(bx * W)
+            y0 = int(by * H)
+            max_w = int(bw * W)
+            max_h = int(bh * H)
 
-        # ✅ 핵심: 폰트 사이즈 자동 조절 (너무 커서 얼굴 회피가 불가능할 때 대비)
-        # 시도: base_font_size부터 점점 줄여서 "얼굴 안가림 가능한 위치" 찾기
-        # (무한 루프 방지)
-        chosen = None
-        chosen_font = None
-        chosen_wrapped = None
+            # 폰트 크기 자동 축소
+            chosen_font = None
+            wrapped = None
 
-        # 텍스트가 들어갈 최대 폭은 이미지의 90%
-        max_text_width = int(W * 0.90)
+            for font_size in [
+                base_font_size,
+                int(base_font_size * 0.9),
+                int(base_font_size * 0.8),
+                int(base_font_size * 0.7),
+                48,
+            ]:
+                font = load_font(font_face, font_size)
+                test_wrap = wrap_text(draw, text, font, max_w, stroke_width)
+                bbox = draw.textbbox((0, 0), test_wrap, font=font, stroke_width=stroke_width)
+                text_h = bbox[3] - bbox[1]
 
-        # 폰트 크기를 단계적으로 줄이며 시도
-        for font_size in [base_font_size, int(base_font_size * 0.9), int(base_font_size * 0.8), int(base_font_size * 0.7), 48]:
-            font = load_font(font_face, font_size)
-            wrapped = wrap_text(draw, text, font, max_text_width, stroke_width=stroke_width)
+                if text_h <= max_h:
+                    chosen_font = font
+                    wrapped = test_wrap
+                    break
 
-            bbox = draw.textbbox((0, 0), wrapped, font=font, stroke_width=stroke_width)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
+            if chosen_font is None:
+                chosen_font = load_font(font_face, 48)
+                wrapped = wrap_text(draw, text, chosen_font, max_w, stroke_width)
 
-            # 후보 위치들 중 얼굴과 안 겹치는 첫 번째를 선택
-            for (x, y) in candidate_positions(pos, text_w, text_h):
-                text_rect = (int(x), int(y), int(text_w), int(text_h))
+            draw.text(
+                (x0, y0),
+                wrapped,
+                font=chosen_font,
+                fill=color,
+                stroke_width=stroke_width,
+                stroke_fill=stroke_color,
+            )
+            continue  # 🔥 box 처리 끝 → 다음 caption
 
-                if face_rects and _overlaps_any_face(text_rect, face_rects):
-                    continue
+        # =====================================
+        # ⚠️ CASE 2: box가 없는 경우 (fallback)
+        # =====================================
+        font = load_font(font_face, base_font_size)
+        wrapped = wrap_text(draw, text, font, int(W * 0.9), stroke_width)
 
-                chosen = (x, y)
-                chosen_font = font
-                chosen_wrapped = wrapped
-                break
+        bbox = draw.textbbox((0, 0), wrapped, font=font, stroke_width=stroke_width)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
 
-            if chosen is not None:
-                break
-
-        # 그래도 못 찾으면(얼굴이 너무 크거나 텍스트가 너무 큼):
-        # 얼굴 무시하고 base 위치로라도 그린다 (서비스 다운 방지)
-        if chosen is None:
-            font = load_font(font_face, base_font_size)
-            wrapped = wrap_text(draw, text, font, max_text_width, stroke_width=stroke_width)
-            bbox = draw.textbbox((0, 0), wrapped, font=font, stroke_width=stroke_width)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
-            # base pos 중심
-            if pos == "top":
-                chosen = (int((W - text_w) / 2), int(H * 0.05))
-            elif pos == "bottom":
-                chosen = (int((W - text_w) / 2), int(H - text_h - H * 0.05))
-            else:
-                chosen = (int((W - text_w) / 2), int((H - text_h) / 2))
-            chosen_font = font
-            chosen_wrapped = wrapped
-
-        x, y = chosen
+        x = int((W - text_w) / 2)
+        y = int(H - text_h - H * 0.05)
 
         draw.text(
             (x, y),
-            chosen_wrapped,
-            font=chosen_font,
+            wrapped,
+            font=font,
             fill=color,
             stroke_width=stroke_width,
             stroke_fill=stroke_color,
@@ -1013,6 +962,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
 
     upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
     return upload_result["public_id"]
+
 
 
 
