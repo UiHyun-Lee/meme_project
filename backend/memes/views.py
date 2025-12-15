@@ -599,14 +599,205 @@ def topic_list(request):
 # =========================
 # Single AI meme generate
 # =========================
+# @api_view(["POST"])
+# def generate_ai_meme(request):
+#     template_id = request.data.get("template")
+#     if not template_id:
+#         return Response(
+#             {"error": "template id required"},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+#
+#     template = get_object_or_404(MemeTemplate, id=template_id)
+#
+#     try:
+#         current_topic = get_current_topic_or_400()
+#     except Exception as e:
+#         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#
+#     category_name = template.category.name if template.category else ""
+#     template_desc = template.description or ""
+#
+#     try:
+#         template_image_url = template.image.url
+#     except Exception:
+#         template_image_url = str(template.image)
+#         if not template_image_url:
+#             return Response(
+#                 {"error": "Template image URL missing"},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             )
+#
+#     # meme cnt (default 5, max 3로 제한 – 성능/타임아웃 방지용)
+#     try:
+#         requested_count = int(request.data.get("count", 5))
+#     except Exception:
+#         requested_count = 5
+#
+#     if requested_count < 1:
+#         requested_count = 1
+#     if requested_count > 3:  # 기존 7 → 3으로 축소
+#         requested_count = 3
+#
+#     # 1) AI caption + style config
+#     design = generate_ai_meme_design(
+#         topic=current_topic,
+#         category_name=category_name,
+#         template_desc=template_desc,
+#         template_url=template_image_url,
+#     )
+#
+#     if "error" in design:
+#         return Response(design, status=status.HTTP_502_BAD_GATEWAY)
+#
+#     captions = design.get("captions") or []
+#     if not captions:
+#         return Response(
+#             {"error": "No captions generated from AI"},
+#             status=status.HTTP_502_BAD_GATEWAY,
+#         )
+#
+#     captions = captions[:requested_count]
+#
+#     created_memes = []
+#
+#     for cap in captions:
+#         try:
+#             public_id = apply_ai_text_to_image(template_image_url, [cap])
+#         except Exception as e:
+#             print("apply_ai_text_to_image error:", repr(e))
+#             continue
+#
+#         try:
+#             meme = Meme.objects.create(
+#                 template=template,
+#                 image=public_id,  # CloudinaryField → public_id
+#                 caption=str(cap.get("text", "")),
+#                 created_by="ai",
+#                 format="macro",
+#                 topic=current_topic,
+#             )
+#             created_memes.append(meme)
+#         except Exception as e:
+#             print("Meme create error:", repr(e))
+#             continue
+#
+#     if not created_memes:
+#         return Response(
+#             {"error": "AI memes could not be generated"},
+#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#         )
+#
+#     serializer = MemeSerializer(created_memes, many=True)
+#     return Response(serializer.data, status=status.HTTP_201_CREATED)
+#
+#
+# Multiple AI memes generate
+@api_view(["POST"])
+def generate_multiple_ai_memes(request):
+    try:
+        current_topic = get_current_topic_or_400()
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        count = int(request.data.get("count", 3))
+    except Exception:
+        count = 3
+
+    count = max(1, min(count, 5))
+
+    template_ids = request.data.get("template_ids") or []
+    if template_ids:
+        templates = list(MemeTemplate.objects.filter(id__in=template_ids))
+    else:
+        templates = list(MemeTemplate.objects.all())
+
+    if not templates:
+        return Response({"error": "No templates available"}, status=400)
+
+    created_memes = []
+
+    max_openai_calls = 3
+    openai_calls = 0
+    max_iterations = count * 2
+
+    for _ in range(max_iterations):
+        if len(created_memes) >= count:
+            break
+        if openai_calls >= max_openai_calls:
+            break
+
+        template = random.choice(templates)
+
+        try:
+            template_image_url = template.image.url
+        except Exception:
+            template_image_url = str(template.image)
+            if not template_image_url:
+                continue
+
+        design = generate_ai_meme_design(
+            topic=current_topic,
+            category_name=template.category.name if template.category else "",
+            template_desc=template.description or "",
+            template_url=template_image_url,
+        )
+        openai_calls += 1
+
+        if "error" in design:
+            continue
+
+        designs = design.get("designs") or []
+        if not designs:
+            continue
+
+        # 🔑 핵심: blocks 묶음 하나 = 밈 하나
+        for blocks in designs:
+            if len(created_memes) >= count:
+                break
+            if not isinstance(blocks, list) or not blocks:
+                continue
+
+            try:
+                public_id = apply_ai_text_to_image(template_image_url, blocks)
+            except Exception as e:
+                print("apply_ai_text_to_image error:", repr(e))
+                continue
+
+            full_caption = " / ".join([b.get("text", "") for b in blocks]).strip()
+
+            try:
+                meme = Meme.objects.create(
+                    template=template,
+                    image=public_id,
+                    caption=full_caption,
+                    created_by="ai",
+                    format="macro",
+                    topic=current_topic,
+                )
+                created_memes.append(meme)
+            except Exception as e:
+                print("Meme create error:", repr(e))
+                continue
+
+    if not created_memes:
+        return Response(
+            {"error": "AI memes could not be generated"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response(
+        MemeSerializer(created_memes, many=True).data,
+        status=status.HTTP_201_CREATED,
+    )
+
+
 @api_view(["POST"])
 def generate_ai_meme(request):
     template_id = request.data.get("template")
     if not template_id:
-        return Response(
-            {"error": "template id required"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({"error": "template id required"}, status=status.HTTP_400_BAD_REQUEST)
 
     template = get_object_or_404(MemeTemplate, id=template_id)
 
@@ -623,23 +814,15 @@ def generate_ai_meme(request):
     except Exception:
         template_image_url = str(template.image)
         if not template_image_url:
-            return Response(
-                {"error": "Template image URL missing"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            return Response({"error": "Template image URL missing"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # meme cnt (default 5, max 3로 제한 – 성능/타임아웃 방지용)
+    # count = 생성할 "밈 아이디어(=design)" 개수 (최대 3)
     try:
-        requested_count = int(request.data.get("count", 5))
+        requested_count = int(request.data.get("count", 3))
     except Exception:
-        requested_count = 5
-
-    if requested_count < 1:
-        requested_count = 1
-    if requested_count > 3:  # 기존 7 → 3으로 축소
         requested_count = 3
+    requested_count = max(1, min(requested_count, 3))
 
-    # 1) AI caption + style config
     design = generate_ai_meme_design(
         topic=current_topic,
         category_name=category_name,
@@ -650,29 +833,31 @@ def generate_ai_meme(request):
     if "error" in design:
         return Response(design, status=status.HTTP_502_BAD_GATEWAY)
 
-    captions = design.get("captions") or []
-    if not captions:
-        return Response(
-            {"error": "No captions generated from AI"},
-            status=status.HTTP_502_BAD_GATEWAY,
-        )
+    designs = design.get("designs") or []
+    if not designs:
+        return Response({"error": "No captions generated from AI"}, status=status.HTTP_502_BAD_GATEWAY)
 
-    captions = captions[:requested_count]
+    designs = designs[:requested_count]
 
     created_memes = []
 
-    for cap in captions:
+    for blocks in designs:
+        if not isinstance(blocks, list) or not blocks:
+            continue
+
         try:
-            public_id = apply_ai_text_to_image(template_image_url, [cap])
+            public_id = apply_ai_text_to_image(template_image_url, blocks)  # ✅ blocks 묶음 그대로
         except Exception as e:
             print("apply_ai_text_to_image error:", repr(e))
             continue
 
+        full_caption = " / ".join([b.get("text", "") for b in blocks]).strip()
+
         try:
             meme = Meme.objects.create(
                 template=template,
-                image=public_id,  # CloudinaryField → public_id
-                caption=str(cap.get("text", "")),
+                image=public_id,
+                caption=full_caption,
                 created_by="ai",
                 format="macro",
                 topic=current_topic,
@@ -683,127 +868,10 @@ def generate_ai_meme(request):
             continue
 
     if not created_memes:
-        return Response(
-            {"error": "AI memes could not be generated"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+        return Response({"error": "AI memes could not be generated"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     serializer = MemeSerializer(created_memes, many=True)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-# Multiple AI memes generate
-@api_view(["POST"])
-def generate_multiple_ai_memes(request):
-    try:
-        current_topic = get_current_topic_or_400()
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        count = int(request.data.get("count", 3))
-    except Exception:
-        count = 3
-
-    if count < 1:
-        count = 1
-    if count > 5:
-        count = 5
-
-    template_ids = request.data.get("template_ids") or []
-    if template_ids:
-        templates_qs = MemeTemplate.objects.filter(id__in=template_ids)
-    else:
-        templates_qs = MemeTemplate.objects.all()
-
-    templates = list(templates_qs)
-    if not templates:
-        return Response(
-            {"error": "No templates available"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    created_memes = []
-
-    # 한 요청당 OpenAI 호출 제한
-    max_openai_calls = 3
-    openai_calls = 0
-
-    # 템플릿 선택 시도 횟수
-    max_iterations = count * 2
-
-    for _ in range(max_iterations):
-        if len(created_memes) >= count:
-            break
-        if openai_calls >= max_openai_calls:
-            break
-
-        template = random.choice(templates)
-
-        category_name = template.category.name if template.category else ""
-        template_desc = template.description or ""
-
-        try:
-            template_image_url = template.image.url
-        except Exception:
-            template_image_url = str(template.image)
-            if not template_image_url:
-                continue
-
-        print(
-            "generate_multiple_ai_memes: calling generate_ai_meme_design for template",
-            template.id,
-        )
-        design = generate_ai_meme_design(
-            topic=current_topic,
-            category_name=category_name,
-            template_desc=template_desc,
-            template_url=template_image_url,
-        )
-        openai_calls += 1
-
-        if "error" in design:
-            print("AI design error for template", template.id, design)
-            continue
-
-        captions = design.get("captions") or []
-        if not captions:
-            continue
-
-        for cap in captions:
-            if len(created_memes) >= count:
-                break
-
-            try:
-                public_id = apply_ai_text_to_image(template_image_url, [cap])
-            except Exception as e:
-                print("apply_ai_text_to_image error:", repr(e))
-                continue
-
-            try:
-                meme = Meme.objects.create(
-                    template=template,
-                    image=public_id,
-                    caption=str(cap.get("text", "")),
-                    created_by="ai",
-                    format="macro",
-                    topic=current_topic,
-                )
-            except Exception as e:
-                print("Meme create error:", repr(e))
-                continue
-
-            created_memes.append(meme)
-
-    if not created_memes:
-        return Response(
-            {"error": "AI memes could not be generated"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    data = MemeSerializer(created_memes, many=True).data
-    return Response(data, status=status.HTTP_201_CREATED)
-
 
 # =========================
 # Cloudinary data import
