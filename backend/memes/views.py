@@ -711,7 +711,7 @@ def generate_multiple_ai_memes(request):
     """
     # ---- 전체 요청 soft time limit (초) ----
     # (Railway/Gunicorn timeout보다 조금 낮게 잡는 게 좋음)
-    SOFT_TIME_LIMIT = 45
+    SOFT_TIME_LIMIT = 25
 
     t0 = time.time()
 
@@ -827,8 +827,7 @@ def generate_multiple_ai_memes(request):
             if not isinstance(b, dict):
                 continue
             text = (b.get("text") or "").strip()
-            box = b.get("box")
-            if not text or not isinstance(box, dict):
+            if not text:
                 continue
             valid_blocks.append(b)
 
