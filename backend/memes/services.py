@@ -614,6 +614,21 @@ def generate_ai_meme_design(
       - font_face ("impact" or "arial")
     - Text must be natural, meme-like English. No emojis. ASCII only.
     - Return valid JSON only (no backticks).
+    
+    CRITICAL SEMANTIC RULES:
+
+Each meme idea MUST express exactly ONE coherent idea.
+
+If a meme has multiple text blocks:
+- All blocks MUST be semantically connected.
+- The blocks together must form a clear relation such as:
+  - contrast (A vs B)
+  - cause vs consequence
+  - expectation vs reality
+  - rejection vs preference
+- Do NOT generate independent or unrelated statements.
+- A viewer must immediately understand why the blocks belong together.
+
     """
 
     raw_for_log = ""
