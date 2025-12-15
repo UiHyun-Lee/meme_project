@@ -561,76 +561,60 @@ def generate_ai_meme_design(
     model_name = main_model
 
     prompt = f"""
-You are an expert meme designer AI.
+    You are an expert meme designer AI.
 
-This week’s global meme TOPIC is:
-- "{topic}"
+    This week’s global meme TOPIC is:
+    - "{topic}"
 
-You are given a meme template image (attached image). Analyze the image carefully:
-- Detect how many panels it has (1-panel, 2-panel like Drake, 3+ panels, etc.).
-- Detect where the main subject(s) and the empty text areas are.
-- Infer the typical meme usage of this template if it is a well-known meme format.
-- Based on this layout, decide how many caption blocks (1 to 3) are appropriate.
-- Choose correct placement ("top", "center", "bottom") for each block based on the image composition.
-- All captions MUST clearly relate to the given TOPIC.
+    You are given a meme template image (attached image). Analyze it carefully:
+    - Detect how many panels it has (1-panel, 2-panel, 3+ panels).
+    - Detect where the main subjects are (faces/people/important objects).
+    - Detect empty areas suitable for text.
+    - Decide how many caption blocks (1 to 3) are appropriate for each meme idea.
+    - For each block, output an EXACT caption rectangle as a normalized bounding box.
 
-For this SINGLE template image, create between 3 and 5 different meme ideas.
+    IMPORTANT: Bounding box format:
+    - box.x, box.y, box.w, box.h are floats in [0,1]
+    - x,y is the top-left corner
+    - The box must lie fully inside the image
+    - Choose boxes that do NOT cover faces or important subjects
+    - Prefer low-detail/empty regions
+    - For multi-panel memes, choose boxes inside the correct panel area
 
-You MUST respond with ONLY one JSON object with this structure:
+    Create between 3 and 5 different meme ideas for this single template.
 
-{{
-  "memes": [
+    You MUST respond with ONLY one JSON object:
+
     {{
-      "blocks": [
+      "memes": [
         {{
-          "text": "first text block for this meme",
-          "position": "top",
-          "color": "#ff00cc",
-          "emphasis": "bold",
-          "font_face": "impact"
-        }},
-        {{
-          "text": "second text block (if needed)",
-          "position": "bottom",
-          "color": "deepskyblue",
-          "emphasis": "normal",
-          "font_face": "arial"
-        }}
-      ]
-    }},
-    {{
-      "blocks": [
-        {{
-          "text": "single line meme text for this idea",
-          "position": "center",
-          "color": "rgb(120, 220, 50)",
-          "emphasis": "italic",
-          "font_face": "impact"
+          "blocks": [
+            {{
+              "text": "short meme text (max 8 words)",
+              "box": {{"x": 0.05, "y": 0.05, "w": 0.90, "h": 0.18}},
+              "color": "white",
+              "emphasis": "bold",
+              "font_face": "impact"
+            }}
+          ]
         }}
       ]
     }}
-  ]
-}}
 
-Rules:
-- The top-level object MUST have exactly one key: "memes".
-- "memes" MUST be a non-empty array with 3 to 5 elements.
-- Each element in "memes" MUST have exactly one key: "blocks".
-- "blocks" MUST be a non-empty array with 1 to 3 elements.
-- Each block MUST have exactly five keys:
-  - "text": string
-  - "position": "top", "bottom", or "center"
-  - "color": string (ANY valid CSS color or hex like "#FFFFFF")
-  - "emphasis": "normal", "bold", "italic", or "bold_italic"
-  - "font_face": one of "impact" or "arial"
-- All captions MUST be written in simple English.
-- Do NOT use emojis.
-- Do NOT use non-Latin scripts (no Korean, Chinese, Arabic, etc.).
-- Avoid fancy Unicode symbols; use normal ASCII characters only.
-- Do NOT include any other keys or comments.
-- Do NOT wrap the JSON in backticks.
-- The response MUST be valid JSON.
-"""
+    Rules:
+    - Top-level object must have exactly one key: "memes"
+    - memes: array with 3 to 5 elements
+    - each memes[i] has exactly one key: "blocks"
+    - blocks: array with 1 to 3 elements
+    - each block MUST have exactly these keys:
+      - text (string)
+      - box (object with x,y,w,h floats in [0,1])
+      - color (string)
+      - emphasis ("normal","bold","italic","bold_italic")
+      - font_face ("impact" or "arial")
+    - Text must be natural, meme-like English. No emojis. ASCII only.
+    - Return valid JSON only (no backticks).
+    """
 
     raw_for_log = ""
 
