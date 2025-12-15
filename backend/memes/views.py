@@ -555,9 +555,7 @@ def elo_update(rating_a: float, rating_b: float, score_a: float, k: float = K_FA
     return rating_a + k * (score_a - expected_a)
 
 
-# =========================
 # Category / Template / Meme CRUD
-# =========================
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
