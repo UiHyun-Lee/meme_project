@@ -903,7 +903,9 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             if by < 0.2:
                 y0 = int(0.04 * H)
             elif by > 0.6:
-                y0 = int((by + bh) * H - max_h * 0.95)
+                # 얼굴 클로즈업 템플릿 보호용 "안전 하단 영역"
+                safe_bottom = 0.78  # 👈 핵심 튜닝 포인트
+                y0 = int(safe_bottom * H)
 
             # 폰트 크기 자동 축소
             chosen_font = None
