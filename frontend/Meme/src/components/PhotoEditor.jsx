@@ -167,10 +167,10 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   const handleTextareaKeyDown = (e) => {
     if (e.key !== 'Enter') return
 
-    // ✅ Mobile: Enter = neue Zeile (default), nix submitten
+    //  Enter = neue Zeile (default), nix submitten
     if (isMobileRef.current) return
 
-    // ✅ Desktop: Shift+Enter = neue Zeile, Enter = Add/Update
+    //  Shift+Enter = neue Zeile, Enter = Add/Update
     if (e.shiftKey) return
     e.preventDefault()
     currentText ? updateText() : addText()
