@@ -445,15 +445,13 @@
 import re
 import json
 import os
-from io import BytesIO
 from typing import Optional
 import base64
 import requests
-from PIL import Image, ImageDraw, ImageFont
-import cloudinary.uploader
+from PIL import Image
 from openai import OpenAI
 from django.conf import settings
-
+from PIL import ImageColor
 from .models import MemeTemplate, Meme
 import numpy as np
 
@@ -869,8 +867,16 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     # 4️⃣ 색상 대비 최소 보정
     # =========================
     def ensure_contrast(color: str):
-        # 너무 밝은 색이면 검은 outline 강제
-        return color, "black"
+        try:
+            # CSS color / hex / rgb() → (R,G,B)
+            rgb = ImageColor.getrgb(color)
+            fill = rgb
+        except Exception:
+            # 파싱 실패 시 fallback
+            fill = (255, 255, 255)
+
+        # outline은 항상 검정 (밈 가독성)
+        return fill, (0, 0, 0)
 
     # =========================
     # 5️⃣ 캡션 렌더링
