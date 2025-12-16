@@ -810,6 +810,9 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     import cloudinary.uploader
     from django.conf import settings
 
+    # =========================
+    # 1️⃣ 이미지 로드
+    # =========================
     resp = requests.get(template_url, timeout=15)
     resp.raise_for_status()
 
@@ -817,6 +820,9 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     draw = ImageDraw.Draw(image)
     W, H = image.size
 
+    # =========================
+    # 2️⃣ 폰트 설정
+    # =========================
     FONT_FILES = {
         "impact": "MarkerFelt.ttc",
         "arial": "Geneva.ttf",
@@ -833,13 +839,20 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         except Exception:
             return ImageFont.load_default()
 
+    # =========================
+    # 3️⃣ 텍스트 줄바꿈
+    # =========================
     def wrap_text(draw, text, font, max_width, stroke_width=0):
+        if max_width <= 0:
+            return text
+
         words = text.split()
         if not words:
             return ""
 
         lines = []
         current = words[0]
+
         for w in words[1:]:
             test = current + " " + w
             bbox = draw.textbbox((0, 0), test, font=font, stroke_width=stroke_width)
@@ -848,6 +861,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             else:
                 lines.append(current)
                 current = w
+
         lines.append(current)
         return "\n".join(lines)
 
@@ -858,33 +872,30 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         return color, "white"
 
     # =========================
-    # 🔥 핵심: BOX 우선 렌더링
+    # 4️⃣ 캡션 렌더링
     # =========================
     for cap in captions:
         text = (cap.get("text") or "").strip()
         if not text:
             continue
 
+        # 🔥 텍스트 정제 + 길이 제한
         text = re.sub(r"[^A-Za-z0-9 .,!?\"':;()\-_/]", "", text)
-        if not text.strip():
+        text = text[:45].strip()
+        if not text:
             continue
 
         font_face = (cap.get("font_face") or "impact").lower().strip()
         emphasis = (cap.get("emphasis") or "normal").lower().strip()
         color, stroke_color = choose_color_defaults(cap.get("color", "white"))
-
         stroke_width = 6 if emphasis in ["bold", "bold_italic"] else 4
 
-        # 기본 폰트 크기
-        base_font_size = int(H * 0.10)
-        if base_font_size < 48:
-            base_font_size = 48
-
+        base_font_size = max(int(H * 0.10), 48)
         box = cap.get("box")
 
-        # =====================================
-        # ✅ CASE 1: OpenAI box가 있는 경우
-        # =====================================
+        # =========================
+        # ✅ CASE 1: box 기반 렌더링
+        # =========================
         if isinstance(box, dict):
             try:
                 bx = float(box["x"])
@@ -900,27 +911,31 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             max_w = int(bw * W)
             max_h = int(bh * H)
 
-            if by < 0.2:
-                y0 = int(0.04 * H)
-            elif by > 0.6:
-                # 얼굴 클로즈업 템플릿 보호용 "안전 하단 영역"
-                safe_bottom = 0.78  # 👈 핵심 튜닝 포인트
-                y0 = int(safe_bottom * H)
+            # 🔥 box 크기 방어 (502 방지 핵심)
+            if max_w < int(W * 0.25) or max_h < int(H * 0.10):
+                box = None
+            else:
+                # 🔧 밈 위치 스냅
+                if by < 0.2:
+                    y0 = int(0.04 * H)
+                elif by > 0.6:
+                    y0 = int(0.78 * H)
 
-            # 폰트 크기 자동 축소
+        if isinstance(box, dict):
             chosen_font = None
             wrapped = None
 
+            # 🔥 폰트 시도 최소화 (속도 안정)
             for font_size in [
                 base_font_size,
-                int(base_font_size * 0.9),
-                int(base_font_size * 0.8),
-                int(base_font_size * 0.7),
+                int(base_font_size * 0.85),
                 48,
             ]:
                 font = load_font(font_face, font_size)
                 test_wrap = wrap_text(draw, text, font, max_w, stroke_width)
-                bbox = draw.textbbox((0, 0), test_wrap, font=font, stroke_width=stroke_width)
+                bbox = draw.textbbox(
+                    (0, 0), test_wrap, font=font, stroke_width=stroke_width
+                )
                 text_h = bbox[3] - bbox[1]
 
                 if text_h <= max_h:
@@ -940,11 +955,11 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
                 stroke_width=stroke_width,
                 stroke_fill=stroke_color,
             )
-            continue  # 🔥 box 처리 끝 → 다음 caption
+            continue
 
-        # =====================================
-        # ⚠️ CASE 2: box가 없는 경우 (fallback)
-        # =====================================
+        # =========================
+        # ⚠️ CASE 2: fallback (box 없음)
+        # =========================
         font = load_font(font_face, base_font_size)
         wrapped = wrap_text(draw, text, font, int(W * 0.9), stroke_width)
 
@@ -964,11 +979,23 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             stroke_fill=stroke_color,
         )
 
+    # =========================
+    # 5️⃣ Cloudinary 업로드
+    # =========================
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
-    upload_result = cloudinary.uploader.upload(buffer, folder="memes/ai/")
+    try:
+        upload_result = cloudinary.uploader.upload(
+            buffer,
+            folder="memes/ai/",
+            resource_type="image",
+        )
+    except Exception as e:
+        print("❌ Cloudinary upload failed:", repr(e))
+        raise RuntimeError("cloudinary_upload_failed")
+
     return upload_result["public_id"]
 
 
