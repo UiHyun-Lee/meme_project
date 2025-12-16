@@ -801,9 +801,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     import cloudinary.uploader
     from django.conf import settings
 
-    # =========================
-    # 1️⃣ 이미지 로드
-    # =========================
+    # img upload
     resp = requests.get(template_url, timeout=15)
     resp.raise_for_status()
 
@@ -811,9 +809,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     draw = ImageDraw.Draw(image)
     W, H = image.size
 
-    # =========================
-    # 2️⃣ 폰트 설정
-    # =========================
+    # font confing
     FONT_FILES = {
         "impact": "MarkerFelt.ttc",
         "arial": "Geneva.ttf",
@@ -830,9 +826,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         except Exception:
             return ImageFont.load_default()
 
-    # =========================
-    # 3️⃣ 텍스트 줄바꿈
-    # =========================
     def wrap_text(draw, text, font, max_width, stroke_width=0):
         if max_width <= 0:
             return text
@@ -856,9 +849,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         lines.append(current)
         return "\n".join(lines)
 
-    # =========================
-    # 4️⃣ 색상 변환 (🔥 핵심)
-    # =========================
+    # color confing
     def to_rgb(color):
         if isinstance(color, tuple):
             return color
@@ -872,9 +863,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         stroke = (0, 0, 0)
         return fill, stroke
 
-    # =========================
-    # 5️⃣ 캡션 렌더링
-    # =========================
+    # caption rendering
     for cap in captions:
         text = (cap.get("text") or "").strip()
         if not text:
@@ -896,9 +885,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         base_font_size = max(int(H * 0.10), 48)
         box = cap.get("box")
 
-        # =========================
-        # CASE 1: box 기반
-        # =========================
+        # CASE 1 box
         if isinstance(box, dict):
             try:
                 bx, by, bw, bh = map(float, (box["x"], box["y"], box["w"], box["h"]))
@@ -957,9 +944,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             )
             continue
 
-        # =========================
-        # CASE 2: fallback
-        # =========================
+        # CASE 2 fallback
         font = load_font(font_face, base_font_size)
         wrapped = wrap_text(draw, text, font, int(W * 0.9), stroke_width)
 
@@ -976,9 +961,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             stroke_fill=stroke_color,
         )
 
-    # =========================
-    # 6️⃣ 업로드
-    # =========================
+    # upload
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
@@ -990,7 +973,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     )
 
     return upload_result["public_id"]
-
 
 
 
