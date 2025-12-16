@@ -900,6 +900,11 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             max_w = int(bw * W)
             max_h = int(bh * H)
 
+            if by < 0.2:
+                y0 = int(0.04 * H)
+            elif by > 0.6:
+                y0 = int((by + bh) * H - max_h * 0.95)
+
             # 폰트 크기 자동 축소
             chosen_font = None
             wrapped = None
