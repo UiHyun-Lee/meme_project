@@ -38,6 +38,15 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   // Drag offset so the text doesn't "jump" and can't be pushed out
   const dragOffsetRef = useRef({ x: 0, y: 0 })
 
+  const isMobileRef = useRef(false)
+
+  useEffect(() => {
+    isMobileRef.current =
+      (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+      'ontouchstart' in window
+  }, [])
+
+
   const fontOptions = [
     'Arial',
     'Impact',
@@ -158,11 +167,15 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   const handleTextareaKeyDown = (e) => {
     if (e.key !== 'Enter') return
 
-    if (e.shiftKey) return // newline
+    // ✅ Mobile: Enter = neue Zeile (default), nix submitten
+    if (isMobileRef.current) return
 
+    // ✅ Desktop: Shift+Enter = neue Zeile, Enter = Add/Update
+    if (e.shiftKey) return
     e.preventDefault()
     currentText ? updateText() : addText()
   }
+
 
   // Clamp helper: keep text fully inside all edges
   const clampPositionToContainer = (x, y, elId) => {
@@ -578,7 +591,10 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
                 border: '1px solid #ccc',
                 borderRadius: '4px',
                 fontSize: '14px',
-                resize: 'vertical'
+                resize: 'none',
+                height: '80px',
+                maxHeight: '80px',
+                overflow: 'auto',
               }}
             />
             <div style={{ marginTop: '8px' }}>
