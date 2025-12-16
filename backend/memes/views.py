@@ -748,7 +748,7 @@ def generate_multiple_ai_memes(request):
     created_memes = []
 
     # 4) OpenAI 호출 제한
-    MAX_OPENAI_CALLS = 2
+    MAX_OPENAI_CALLS = 1
     openai_calls = 0
 
     # 5) 템플릿 선택 시도 횟수 (너무 무한루프 방지)
