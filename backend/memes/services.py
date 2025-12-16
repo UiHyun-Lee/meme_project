@@ -758,6 +758,7 @@ If a meme has multiple text blocks:
             parsed_blocks.append(
                 {
                     "text": text,
+                    "box": b.get("box"),
                     "position": b.get("position", "bottom"),
                     "color": b.get("color", "white"),
                     "font_face": (b.get("font_face") or "impact").lower().strip(),
