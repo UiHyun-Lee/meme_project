@@ -586,7 +586,7 @@ def generate_ai_meme_design(
             {{
               "text": "short meme text (max 8 words)",
               "box": {{"x": 0.05, "y": 0.05, "w": 0.90, "h": 0.18}},
-              "color": "white",
+              "color": "deepskyblue",
               "emphasis": "bold",
               "font_face": "impact"
             }}
@@ -608,6 +608,7 @@ def generate_ai_meme_design(
       - font_face ("impact" or "arial")
     - Text must be natural, meme-like English. No emojis. ASCII only.
     - Return valid JSON only (no backticks).
+    - Do NOT restrict yourself to white text. Actively vary text colors between meme ideas whenever possible.
     
     CRITICAL SEMANTIC RULES:
 
