@@ -484,10 +484,6 @@ def log_ai_meme_call(model_name: str, topic: str, template_url: str, prompt: str
         print("AI meme log error:", repr(e))
 
 def _detect_faces_pil(pil_image: Image.Image):
-    """
-    Returns a list of face rectangles: [(x, y, w, h), ...] in pixel coords.
-    Uses OpenCV Haar cascades. If cv2 is not available, returns [].
-    """
     if cv2 is None:
         return []
 
@@ -629,15 +625,12 @@ If a meme has multiple text blocks:
 
     """
 
-    raw_for_log = ""
+    # raw_for_log = ""
 
-    # 1) 항상 https로
     template_url_https = _force_https(template_url)
 
-    # 2) 우선 https URL로 시도
     image_payload_url = template_url_https
 
-    # 3) 혹시 실패하면 data URL(base64)로 fallback 하도록 try/except 2단계 호출
     try:
         response = client.chat.completions.create(
             model=model_name,
@@ -663,7 +656,6 @@ If a meme has multiple text blocks:
             max_tokens=1500,
         )
     except Exception as e:
-        # URL 방식이 실패하면, base64(data URL) 방식으로 재시도
         print("OpenAI URL image failed, retrying with data URL:", repr(e))
 
         try:
@@ -804,7 +796,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     import os
     from io import BytesIO
     import requests
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFont, ImageColor
     import cloudinary.uploader
     from django.conf import settings
 
@@ -864,19 +856,20 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         return "\n".join(lines)
 
     # =========================
-    # 4️⃣ 색상 대비 최소 보정
+    # 4️⃣ 색상 변환 (🔥 핵심)
     # =========================
-    def ensure_contrast(color: str):
+    def to_rgb(color):
+        if isinstance(color, tuple):
+            return color
         try:
-            # CSS color / hex / rgb() → (R,G,B)
-            rgb = ImageColor.getrgb(color)
-            fill = rgb
+            return ImageColor.getrgb(color)
         except Exception:
-            # 파싱 실패 시 fallback
-            fill = (255, 255, 255)
+            return (255, 255, 255)
 
-        # outline은 항상 검정 (밈 가독성)
-        return fill, (0, 0, 0)
+    def ensure_contrast(color):
+        fill = to_rgb(color)
+        stroke = (0, 0, 0)
+        return fill, stroke
 
     # =========================
     # 5️⃣ 캡션 렌더링
@@ -895,7 +888,6 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         emphasis = (cap.get("emphasis") or "normal").lower().strip()
         color, stroke_color = ensure_contrast(cap.get("color", "white"))
 
-        # === emphasis 해석 ===
         is_bold = emphasis in ["bold", "bold_italic"]
         is_italic = emphasis in ["italic", "bold_italic"]
 
@@ -943,15 +935,14 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
                 chosen_font = load_font(font_face, 48)
                 wrapped = wrap_text(draw, text, chosen_font, max_w, stroke_width)
 
-            # === italic 흉내 (skew) ===
             dx = int(0.01 * W) if is_italic else 0
 
-            # === shadow 느낌 (offset) ===
+            # shadow
             draw.text(
                 (x0 + 2, y0 + 2),
                 wrapped,
                 font=chosen_font,
-                fill="black",
+                fill=(0, 0, 0),
                 stroke_width=0,
             )
 
@@ -998,6 +989,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
     )
 
     return upload_result["public_id"]
+
 
 
 
@@ -1062,7 +1054,7 @@ def ensure_ai_balance_for_topic(
         if not designs:
             continue
 
-        blocks = designs[0]  # ✅ 블록 묶음 1세트 = 밈 1개
+        blocks = designs[0]
 
         try:
             public_id = apply_ai_text_to_image(template_image_url, blocks)
@@ -1092,10 +1084,6 @@ def _force_https(url: str) -> str:
 
 
 def _image_url_to_data_url(url: str) -> str:
-    """
-    Download image ourselves and convert to data URL (base64),
-    so OpenAI doesn't need to fetch Cloudinary directly.
-    """
     url = _force_https(url)
     r = requests.get(url, timeout=20, headers={"User-Agent": "meme-battle-bot/1.0"})
     r.raise_for_status()
