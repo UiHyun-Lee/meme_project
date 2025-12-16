@@ -1,0 +1,2 @@
+[deploy]
+startCommand = "gunicorn meme_project.wsgi:application --timeout 90"
