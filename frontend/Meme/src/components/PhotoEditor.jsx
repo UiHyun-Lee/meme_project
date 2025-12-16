@@ -269,7 +269,7 @@ useEffect(() => {
       }}
     >
       <img
-        src={t.image_url}      // 🔥 여기가 핵심
+        src={t.image_url}
         alt={t.description || `Template ${i + 1}`}
         crossOrigin="anonymous"
         style={{
