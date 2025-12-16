@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import html2canvas from 'html2canvas'
-import { getCloudTemplates } from '../api' //  Cloudinary templates from backend
+import { getCloudTemplates } from '../api' // Cloudinary templates from backend
 
 export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   const [templates, setTemplates] = useState([])
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [textElements, setTextElements] = useState([])
   const [currentText, setCurrentText] = useState(null)
+
+  // Defaults for NEW text (also used when editing)
   const [textColor, setTextColor] = useState('#ffffff')
   const [fontSize, setFontSize] = useState(32)
   const [fontFamily, setFontFamily] = useState('Arial')
@@ -14,40 +16,62 @@ export default function PhotoEditor({ onMemeCreate, onTemplateSelect }) {
   const [isItalic, setIsItalic] = useState(false)
   const [isUnderline, setIsUnderline] = useState(false)
   const [hasShadow, setHasShadow] = useState(true)
+
   const [textInput, setTextInput] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // Refs
   const imgContainerRef = useRef(null)
   const previewRef = useRef(null)
   const textInputRef = useRef(null)
   const lastTapRef = useRef(0)
   const tapTimeoutRef = useRef(null)
 
+  // Pinch zoom refs (mobile)
+  const pinchStartDistanceRef = useRef(null)
+  const pinchStartFontSizeRef = useRef(null)
+
+  // Measure each text node size (for clamping inside image)
+  const textNodeRefs = useRef({})
+
+  // Drag offset so the text doesn't "jump" and can't be pushed out
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+
   const fontOptions = [
-    'Arial', 'Impact', 'Verdana', 'Times New Roman', 'Georgia', 'Helvetica', 'Courier New', 'Comic Sans MS'
+    'Arial',
+    'Impact',
+    'Verdana',
+    'Times New Roman',
+    'Georgia',
+    'Helvetica',
+    'Courier New',
+    'Comic Sans MS'
   ]
 
-  // Load Cloudinary templates
-useEffect(() => {
-  const fetchTemplates = async () => {
-    try {
-      const res = await getCloudTemplates()
-      console.log("templates res.data =", res.data)
-
-      const data = Array.isArray(res.data)
-        ? res.data
-        : (res.data.results || res.data)
-
-      setTemplates(data || [])
-    } catch (err) {
-      console.error('Error loading templates:', err)
-    } finally {
-      setLoading(false)
-    }
+  const getTouchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
   }
-  fetchTemplates()
-}, [])
+
+  // Load Cloudinary templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const res = await getCloudTemplates()
+        console.log('templates res.data =', res.data)
+
+        const data = Array.isArray(res.data) ? res.data : (res.data.results || res.data)
+        setTemplates(data || [])
+      } catch (err) {
+        console.error('Error loading templates:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTemplates()
+  }, [])
 
   // Template select
   const handleTemplateSelect = (template) => {
@@ -61,7 +85,25 @@ useEffect(() => {
     }, 100)
   }
 
-  //  Add / Update text
+  // Select text element (click/tap) => enters update mode
+  const selectTextElement = (el) => {
+    setCurrentText(el)
+    setTextInput(el.text)
+    setTextColor(el.color)
+    setFontSize(el.fontSize)
+    setFontFamily(el.fontFamily)
+    setIsBold(el.fontWeight === 'bold')
+    setIsItalic(el.fontStyle === 'italic')
+    setIsUnderline(el.textDecoration === 'underline')
+    setHasShadow(!!el.textShadow)
+
+    setTimeout(() => {
+      textInputRef.current?.focus()
+      textInputRef.current?.select()
+    }, 50)
+  }
+
+  // Add text (uses current style settings)
   const addText = () => {
     if (!selectedTemplate) return alert('Choose a template first.')
 
@@ -79,31 +121,110 @@ useEffect(() => {
     }
 
     setTextElements(prev => [...prev, newText])
-    setCurrentText(newText)
+
+    // stay in add mode for next text
+    setCurrentText(null)
     setTextInput('')
     setTimeout(() => textInputRef.current?.focus(), 100)
   }
 
   const updateText = () => {
-    if (!currentText || !textInput.trim()) return
+    if (!currentText) return
+
     setTextElements(prev =>
-      prev.map(el => el.id === currentText.id ? { ...el, text: textInput.trim() } : el)
+      prev.map(el =>
+        el.id === currentText.id
+          ? {
+              ...el,
+              text: textInput,
+              color: textColor,
+              fontSize,
+              fontFamily,
+              fontWeight: isBold ? 'bold' : 'normal',
+              fontStyle: isItalic ? 'italic' : 'normal',
+              textDecoration: isUnderline ? 'underline' : 'none',
+              textShadow: hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : '',
+            }
+          : el
+      )
     )
-    setTextInput('')
+
+    // back to add mode
     setCurrentText(null)
+    setTextInput('')
   }
 
-  // Text click & edit
-  const handleTextDoubleClick = (el) => {
-    setTextInput(el.text)
-    setCurrentText(el)
-    setTimeout(() => {
-      textInputRef.current?.focus()
-      textInputRef.current?.select()
-    }, 100)
+  // Shift+Enter = newline, Enter = Add/Update
+  const handleTextareaKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+
+    if (e.shiftKey) return // newline
+
+    e.preventDefault()
+    currentText ? updateText() : addText()
   }
 
-  // Touch double-tap delete
+  // Clamp helper: keep text fully inside all edges
+  const clampPositionToContainer = (x, y, elId) => {
+    const container = imgContainerRef.current
+    const node = textNodeRefs.current[elId]
+    if (!container || !node) return { x, y }
+
+    const cw = container.clientWidth
+    const ch = container.clientHeight
+    const tw = node.offsetWidth || 0
+    const th = node.offsetHeight || 0
+
+    const maxX = Math.max(0, cw - tw)
+    const maxY = Math.max(0, ch - th)
+
+    return {
+      x: Math.min(Math.max(0, x), maxX),
+      y: Math.min(Math.max(0, y), maxY),
+    }
+  }
+
+  // Drag handling
+  const updateTextPosition = (clientX, clientY) => {
+    if (!isDragging || !currentText) return
+    const container = imgContainerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+
+    // keep pointer in same place on the text while dragging
+    let x = clientX - rect.left - dragOffsetRef.current.x
+    let y = clientY - rect.top - dragOffsetRef.current.y
+
+    // clamp inside all 4 edges
+    const clamped = clampPositionToContainer(x, y, currentText.id)
+    x = clamped.x
+    y = clamped.y
+
+    setTextElements(prev =>
+      prev.map(el =>
+        el.id === currentText.id ? { ...el, position: { x, y } } : el
+      )
+    )
+  }
+
+  const handleMouseDown = (e, el) => {
+    e.preventDefault()
+    selectTextElement(el)
+
+    const container = imgContainerRef.current
+    if (container) {
+      const rect = container.getBoundingClientRect()
+      dragOffsetRef.current = {
+        x: (e.clientX - rect.left) - el.position.x,
+        y: (e.clientY - rect.top) - el.position.y
+      }
+    }
+
+    setIsDragging(true)
+  }
+
+  // Touch: single tap selects, double tap deletes, pinch to resize font
   const handleTextTap = (el) => {
     const now = Date.now()
     const diff = now - lastTapRef.current
@@ -113,6 +234,7 @@ useEffect(() => {
       tapTimeoutRef.current = null
     }
 
+    // double tap => delete
     if (diff < 300 && diff > 0) {
       if (window.confirm('Delete this text?')) {
         setTextElements(prev => prev.filter(x => x.id !== el.id))
@@ -121,62 +243,84 @@ useEffect(() => {
           setTextInput('')
         }
       }
-    } else {
-      lastTapRef.current = now
-      tapTimeoutRef.current = setTimeout(() => {
-        setCurrentText(el)
-        setTextColor(el.color)
-        setFontSize(el.fontSize)
-        setFontFamily(el.fontFamily)
-        setIsBold(el.fontWeight === 'bold')
-        setIsItalic(el.fontStyle === 'italic')
-        setIsUnderline(el.textDecoration === 'underline')
-        setHasShadow(!!el.textShadow)
-        tapTimeoutRef.current = null
-      }, 300)
+      return
     }
-  }
 
-  //  Drag handling
-  const updateTextPosition = (clientX, clientY) => {
-    if (!isDragging || !currentText) return
-    const container = imgContainerRef.current
-    if (!container) return
-    const rect = container.getBoundingClientRect()
-    const x = clientX - rect.left
-    const y = clientY - rect.top
-    setTextElements(prev =>
-      prev.map(el =>
-        el.id === currentText.id
-          ? { ...el, position: { x, y } }
-          : el
-      )
-    )
-  }
-
-  const handleMouseDown = (e, el) => {
-    e.preventDefault()
-    setCurrentText(el)
-    setIsDragging(true)
+    // single tap => select
+    lastTapRef.current = now
+    tapTimeoutRef.current = setTimeout(() => {
+      selectTextElement(el)
+      tapTimeoutRef.current = null
+    }, 300)
   }
 
   const handleTouchStart = (e, el) => {
-    e.preventDefault()
     handleTextTap(el)
-    setCurrentText(el)
+
+    // pinch start
+    if (e.touches.length === 2) {
+      pinchStartDistanceRef.current = getTouchDistance(e.touches)
+      pinchStartFontSizeRef.current = el.fontSize
+      return
+    }
+
     setIsDragging(true)
     const touch = e.touches[0]
+
+    const container = imgContainerRef.current
+    if (container && currentText) {
+      const rect = container.getBoundingClientRect()
+      dragOffsetRef.current = {
+        x: (touch.clientX - rect.left) - currentText.position.x,
+        y: (touch.clientY - rect.top) - currentText.position.y
+      }
+    }
+
     updateTextPosition(touch.clientX, touch.clientY)
   }
 
   const handleTouchMove = (e) => {
-    if (!isDragging || !currentText) return
-    e.preventDefault()
-    const touch = e.touches[0]
-    updateTextPosition(touch.clientX, touch.clientY)
+    if (!currentText) return
+    // ✅ no e.preventDefault() here -> avoids passive listener warning
+
+    // pinch move
+    if (e.touches.length === 2 && pinchStartDistanceRef.current && pinchStartFontSizeRef.current) {
+      const newDistance = getTouchDistance(e.touches)
+      const scale = newDistance / pinchStartDistanceRef.current
+      const newFont = Math.min(300, Math.max(8, Math.round(pinchStartFontSizeRef.current * scale)))
+
+      setFontSize(newFont)
+
+      setTextElements(prev =>
+        prev.map(el => (el.id === currentText.id ? { ...el, fontSize: newFont } : el))
+      )
+      setCurrentText(prev => (prev ? { ...prev, fontSize: newFont } : prev))
+
+      // after size change, clamp again
+      requestAnimationFrame(() => {
+        const elState = textElements.find(t => t.id === currentText.id)
+        const pos = elState?.position || currentText.position || { x: 0, y: 0 }
+        const clamped = clampPositionToContainer(pos.x, pos.y, currentText.id)
+        setTextElements(prev =>
+          prev.map(el => (el.id === currentText.id ? { ...el, position: clamped } : el))
+        )
+      })
+
+      return
+    }
+
+    // drag move
+    if (isDragging) {
+      const touch = e.touches[0]
+      updateTextPosition(touch.clientX, touch.clientY)
+    }
   }
 
-  const handleTouchEnd = () => setIsDragging(false)
+  const handleTouchEnd = () => {
+    setIsDragging(false)
+    pinchStartDistanceRef.current = null
+    pinchStartFontSizeRef.current = null
+  }
 
   useEffect(() => {
     const handleMouseMove = (e) => updateTextPosition(e.clientX, e.clientY)
@@ -191,22 +335,26 @@ useEffect(() => {
     }
   }, [isDragging, currentText])
 
-  //  Context delete
+  // Context delete
   const handleContextMenu = (e, el) => {
     e.preventDefault()
     if (window.confirm('Delete this text?')) {
       setTextElements(prev => prev.filter(x => x.id !== el.id))
-      if (currentText?.id === el.id) setCurrentText(null)
+      if (currentText?.id === el.id) {
+        setCurrentText(null)
+        setTextInput('')
+      }
     }
   }
 
+  // Style update: if editing, update element; if not editing, just update defaults for next text
   const updateStyle = (prop, val) => {
     if (!currentText) return
-    setTextElements(prev => prev.map(el => el.id === currentText.id ? { ...el, [prop]: val } : el))
-    setCurrentText(prev => prev ? { ...prev, [prop]: val } : prev)
+    setTextElements(prev => prev.map(el => (el.id === currentText.id ? { ...el, [prop]: val } : el)))
+    setCurrentText(prev => (prev ? { ...prev, [prop]: val } : prev))
   }
 
-  //  Download Meme (html2canvas)
+  // Download Meme (html2canvas)
   const handleDownloadMeme = async () => {
     if (!selectedTemplate) return alert('Please select a template first.')
     try {
@@ -225,15 +373,11 @@ useEffect(() => {
     }
   }
 
-  //  Submit Meme (Cloudinary backend)
+  // Submit Meme (Cloudinary backend)
   const handleCreateMeme = () => {
     if (!selectedTemplate) return alert('Choose a template first.')
     const memeData = { template: selectedTemplate, textElements }
     if (onMemeCreate) onMemeCreate(memeData)
-  }
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') currentText ? updateText() : addText()
   }
 
   if (loading) return <p style={{ color: 'white' }}>Loading Cloudinary templates...</p>
@@ -249,46 +393,46 @@ useEffect(() => {
     }}>
       <h2>Create Your Meme</h2>
 
-      {/*  Template choice */}
+      {/* Template choice */}
       <div style={{ marginBottom: 12 }}>
         <h4>Choose a template</h4>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-{templates.map((t, i) => (
-  <div key={t.id} style={{ cursor: 'pointer', textAlign: 'center' }}>
-    <div
-      onClick={() => handleTemplateSelect(t)}
-      style={{
-        width: 120,
-        height: 80,
-        overflow: 'hidden',
-        borderRadius: 6,
-        border:
-          selectedTemplate?.id === t.id
-            ? '3px solid #4f46e5'
-            : '1px solid rgba(0,0,0,0.2)',
-      }}
-    >
-      <img
-        src={t.image_url}
-        alt={t.description || `Template ${i + 1}`}
-        crossOrigin="anonymous"
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block'
-        }}
-      />
-    </div>
-    <div style={{ fontSize: 12, marginTop: 6 }}>
-      {t.description || `Template ${i + 1}`}
-    </div>
-  </div>
-))}
+          {templates.map((t, i) => (
+            <div key={t.id} style={{ cursor: 'pointer', textAlign: 'center' }}>
+              <div
+                onClick={() => handleTemplateSelect(t)}
+                style={{
+                  width: 120,
+                  height: 80,
+                  overflow: 'hidden',
+                  borderRadius: 6,
+                  border:
+                    selectedTemplate?.id === t.id
+                      ? '3px solid #4f46e5'
+                      : '1px solid rgba(0,0,0,0.2)',
+                }}
+              >
+                <img
+                  src={t.image_url}
+                  alt={t.description || `Template ${i + 1}`}
+                  crossOrigin="anonymous"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>
+                {t.description || `Template ${i + 1}`}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/*  Text Options Section */}
+      {/* Text Options */}
       {selectedTemplate && (
         <div style={{
           background: 'rgba(0,0,0,0.05)',
@@ -298,22 +442,143 @@ useEffect(() => {
         }}>
           <h4>Text Options</h4>
 
-          {/* Text Input */}
+          {/* Style controls always enabled */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '12px',
+            marginBottom: 12
+          }}>
+            <label>
+              Color:{' '}
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setTextColor(v)
+                  if (currentText) updateStyle('color', v)
+                }}
+              />
+            </label>
+
+            <label>
+              Size: {fontSize}px
+              <input
+                type="range"
+                min="8"
+                max="300"
+                value={fontSize}
+                onChange={(e) => {
+                  const s = parseInt(e.target.value, 10)
+                  setFontSize(s)
+                  if (currentText) updateStyle('fontSize', s)
+                }}
+              />
+            </label>
+
+            <select
+              value={fontFamily}
+              onChange={(e) => {
+                const v = e.target.value
+                setFontFamily(v)
+                if (currentText) updateStyle('fontFamily', v)
+              }}
+            >
+              {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+
+            <button
+              onClick={() => {
+                const next = !isBold
+                setIsBold(next)
+                if (currentText) updateStyle('fontWeight', next ? 'bold' : 'normal')
+              }}
+              style={{
+                background: isBold ? '#4f46e5' : '#f3f4f6',
+                color: isBold ? 'white' : 'black',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Bold
+            </button>
+
+            <button
+              onClick={() => {
+                const next = !isItalic
+                setIsItalic(next)
+                if (currentText) updateStyle('fontStyle', next ? 'italic' : 'normal')
+              }}
+              style={{
+                background: isItalic ? '#4f46e5' : '#f3f4f6',
+                color: isItalic ? 'white' : 'black',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Italic
+            </button>
+
+            <button
+              onClick={() => {
+                const next = !isUnderline
+                setIsUnderline(next)
+                if (currentText) updateStyle('textDecoration', next ? 'underline' : 'none')
+              }}
+              style={{
+                background: isUnderline ? '#4f46e5' : '#f3f4f6',
+                color: isUnderline ? 'white' : 'black',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Underline
+            </button>
+
+            <button
+              onClick={() => {
+                const next = !hasShadow
+                setHasShadow(next)
+                if (currentText) updateStyle('textShadow', next ? '2px 2px 4px rgba(0,0,0,0.6)' : '')
+              }}
+              style={{
+                background: hasShadow ? '#4f46e5' : '#f3f4f6',
+                color: hasShadow ? 'white' : 'black',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Shadow
+            </button>
+          </div>
+
+          {/* Text input */}
           <div style={{ marginBottom: 12 }}>
-            <input
+            <textarea
               ref={textInputRef}
-              type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter your text..."
+              onKeyDown={handleTextareaKeyDown}
+              placeholder="Enter your text... (Shift+Enter = new line, Enter = Add/Update)"
+              rows={3}
               style={{
                 width: '100%',
                 maxWidth: '400px',
                 padding: '6px',
                 border: '1px solid #ccc',
                 borderRadius: '4px',
-                fontSize: '14px'
+                fontSize: '14px',
+                resize: 'vertical'
               }}
             />
             <div style={{ marginTop: '8px' }}>
@@ -333,47 +598,10 @@ useEffect(() => {
               </button>
             </div>
           </div>
-
-          {/* Style controls */}
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: '12px'
-          }}>
-            <label>Color: <input type="color" value={textColor}
-              onChange={(e) => { setTextColor(e.target.value); updateStyle('color', e.target.value) }}
-              disabled={!currentText} /></label>
-
-            <label>Size: {fontSize}px
-              <input type="range" min="8" max="300" value={fontSize}
-                onChange={(e) => { const s = parseInt(e.target.value, 10); setFontSize(s); updateStyle('fontSize', s) }}
-                disabled={!currentText} />
-            </label>
-
-            <select value={fontFamily}
-              onChange={(e) => { setFontFamily(e.target.value); updateStyle('fontFamily', e.target.value) }}
-              disabled={!currentText}>
-              {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
-            </select>
-
-            <button onClick={() => { setIsBold(!isBold); updateStyle('fontWeight', !isBold ? 'bold' : 'normal') }}
-              disabled={!currentText}
-              style={{ background: isBold ? '#4f46e5' : '#f3f4f6', color: isBold ? 'white' : 'black', padding: '6px 10px', borderRadius: '6px' }}>Bold</button>
-            <button onClick={() => { setIsItalic(!isItalic); updateStyle('fontStyle', !isItalic ? 'italic' : 'normal') }}
-              disabled={!currentText}
-              style={{ background: isItalic ? '#4f46e5' : '#f3f4f6', color: isItalic ? 'white' : 'black', padding: '6px 10px', borderRadius: '6px' }}>Italic</button>
-            <button onClick={() => { setIsUnderline(!isUnderline); updateStyle('textDecoration', !isUnderline ? 'underline' : 'none') }}
-              disabled={!currentText}
-              style={{ background: isUnderline ? '#4f46e5' : '#f3f4f6', color: isUnderline ? 'white' : 'black', padding: '6px 10px', borderRadius: '6px' }}>Underline</button>
-            <button onClick={() => { setHasShadow(!hasShadow); updateStyle('textShadow', !hasShadow ? '2px 2px 4px rgba(0,0,0,0.6)' : '') }}
-              disabled={!currentText}
-              style={{ background: hasShadow ? '#4f46e5' : '#f3f4f6', color: hasShadow ? 'white' : 'black', padding: '6px 10px', borderRadius: '6px' }}>Shadow</button>
-          </div>
         </div>
       )}
 
-      {/*  Preview Section */}
+      {/* Preview */}
       {selectedTemplate && (
         <>
           <div ref={previewRef} style={{ marginTop: 20 }}>
@@ -393,6 +621,21 @@ useEffect(() => {
                 cursor: 'pointer',
                 touchAction: 'none'
               }}
+              onMouseDown={(e) => {
+                // click on empty area or image => exit update mode
+                if (e.target.id === 'imgContainer' || e.target.tagName === 'IMG') {
+                  setCurrentText(null)
+                  setTextInput('')
+                }
+              }}
+              onTouchStart={(e) => {
+                // tap on empty area or image => exit update mode
+                const t = e.target
+                if (t.id === 'imgContainer' || t.tagName === 'IMG') {
+                  setCurrentText(null)
+                  setTextInput('')
+                }
+              }}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
@@ -409,13 +652,21 @@ useEffect(() => {
                   borderRadius: 6
                 }}
               />
+
               {textElements.map(el => (
                 <div
                   key={el.id}
+                  ref={(node) => { if (node) textNodeRefs.current[el.id] = node }}
                   onContextMenu={(e) => handleContextMenu(e, el)}
-                  onMouseDown={(e) => handleMouseDown(e, el)}
-                  onTouchStart={(e) => handleTouchStart(e, el)}
-                  onDoubleClick={() => handleTextDoubleClick(el)}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    handleMouseDown(e, el)
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation()
+                    handleTouchStart(e, el)
+                  }}
+                  onDoubleClick={() => selectTextElement(el)}
                   style={{
                     position: 'absolute',
                     left: el.position.x,
@@ -428,7 +679,12 @@ useEffect(() => {
                     textDecoration: el.textDecoration,
                     textShadow: el.textShadow,
                     cursor: isDragging && currentText?.id === el.id ? 'grabbing' : 'grab',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    whiteSpace: 'pre-wrap',
+                    touchAction: 'none',
+                    outline: currentText?.id === el.id ? '2px dashed rgba(79,70,229,0.8)' : 'none',
+                    padding: currentText?.id === el.id ? 2 : 0,
+                    borderRadius: 4
                   }}
                 >
                   {el.text}
@@ -437,7 +693,7 @@ useEffect(() => {
             </div>
           </div>
 
-          {/*  Buttons */}
+          {/* Buttons */}
           <div style={{
             marginTop: 40,
             display: 'flex',

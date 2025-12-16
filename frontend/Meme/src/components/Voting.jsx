@@ -305,7 +305,7 @@ const Voting = () => {
                 maxWidth: "90%",
               }}
             >
-              👈 Swipe to see both memes before voting!
+               Click on the arrows to see both memes before voting!
             </div>
           )}
 
