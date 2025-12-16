@@ -865,43 +865,44 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         lines.append(current)
         return "\n".join(lines)
 
-    def choose_color_defaults(color: str):
-        lower = str(color).lower()
-        if lower in ["white", "#ffffff", "fff"]:
-            return color, "black"
-        return color, "white"
+    # =========================
+    # 4️⃣ 색상 대비 최소 보정
+    # =========================
+    def ensure_contrast(color: str):
+        # 너무 밝은 색이면 검은 outline 강제
+        return color, "black"
 
     # =========================
-    # 4️⃣ 캡션 렌더링
+    # 5️⃣ 캡션 렌더링
     # =========================
     for cap in captions:
         text = (cap.get("text") or "").strip()
         if not text:
             continue
 
-        # 🔥 텍스트 정제 + 길이 제한
         text = re.sub(r"[^A-Za-z0-9 .,!?\"':;()\-_/]", "", text)
-        text = text[:45].strip()
+        text = text[:50].strip()
         if not text:
             continue
 
         font_face = (cap.get("font_face") or "impact").lower().strip()
         emphasis = (cap.get("emphasis") or "normal").lower().strip()
-        color, stroke_color = choose_color_defaults(cap.get("color", "white"))
-        stroke_width = 6 if emphasis in ["bold", "bold_italic"] else 4
+        color, stroke_color = ensure_contrast(cap.get("color", "white"))
 
+        # === emphasis 해석 ===
+        is_bold = emphasis in ["bold", "bold_italic"]
+        is_italic = emphasis in ["italic", "bold_italic"]
+
+        stroke_width = 6 if is_bold else 4
         base_font_size = max(int(H * 0.10), 48)
         box = cap.get("box")
 
         # =========================
-        # ✅ CASE 1: box 기반 렌더링
+        # CASE 1: box 기반
         # =========================
         if isinstance(box, dict):
             try:
-                bx = float(box["x"])
-                by = float(box["y"])
-                bw = float(box["w"])
-                bh = float(box["h"])
+                bx, by, bw, bh = map(float, (box["x"], box["y"], box["w"], box["h"]))
             except Exception:
                 box = None
 
@@ -911,11 +912,9 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             max_w = int(bw * W)
             max_h = int(bh * H)
 
-            # 🔥 box 크기 방어 (502 방지 핵심)
             if max_w < int(W * 0.25) or max_h < int(H * 0.10):
                 box = None
             else:
-                # 🔧 밈 위치 스냅
                 if by < 0.2:
                     y0 = int(0.04 * H)
                 elif by > 0.6:
@@ -925,20 +924,11 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             chosen_font = None
             wrapped = None
 
-            # 🔥 폰트 시도 최소화 (속도 안정)
-            for font_size in [
-                base_font_size,
-                int(base_font_size * 0.85),
-                48,
-            ]:
+            for font_size in [base_font_size, int(base_font_size * 0.85), 48]:
                 font = load_font(font_face, font_size)
                 test_wrap = wrap_text(draw, text, font, max_w, stroke_width)
-                bbox = draw.textbbox(
-                    (0, 0), test_wrap, font=font, stroke_width=stroke_width
-                )
-                text_h = bbox[3] - bbox[1]
-
-                if text_h <= max_h:
+                bbox = draw.textbbox((0, 0), test_wrap, font=font, stroke_width=stroke_width)
+                if (bbox[3] - bbox[1]) <= max_h:
                     chosen_font = font
                     wrapped = test_wrap
                     break
@@ -947,8 +937,20 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
                 chosen_font = load_font(font_face, 48)
                 wrapped = wrap_text(draw, text, chosen_font, max_w, stroke_width)
 
+            # === italic 흉내 (skew) ===
+            dx = int(0.01 * W) if is_italic else 0
+
+            # === shadow 느낌 (offset) ===
             draw.text(
-                (x0, y0),
+                (x0 + 2, y0 + 2),
+                wrapped,
+                font=chosen_font,
+                fill="black",
+                stroke_width=0,
+            )
+
+            draw.text(
+                (x0 + dx, y0),
                 wrapped,
                 font=chosen_font,
                 fill=color,
@@ -958,17 +960,14 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             continue
 
         # =========================
-        # ⚠️ CASE 2: fallback (box 없음)
+        # CASE 2: fallback
         # =========================
         font = load_font(font_face, base_font_size)
         wrapped = wrap_text(draw, text, font, int(W * 0.9), stroke_width)
 
         bbox = draw.textbbox((0, 0), wrapped, font=font, stroke_width=stroke_width)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
-
-        x = int((W - text_w) / 2)
-        y = int(H - text_h - H * 0.05)
+        x = int((W - (bbox[2] - bbox[0])) / 2)
+        y = int(H - (bbox[3] - bbox[1]) - H * 0.05)
 
         draw.text(
             (x, y),
@@ -980,24 +979,19 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
         )
 
     # =========================
-    # 5️⃣ Cloudinary 업로드
+    # 6️⃣ 업로드
     # =========================
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     buffer.seek(0)
 
-    try:
-        upload_result = cloudinary.uploader.upload(
-            buffer,
-            folder="memes/ai/",
-            resource_type="image",
-        )
-    except Exception as e:
-        print("❌ Cloudinary upload failed:", repr(e))
-        raise RuntimeError("cloudinary_upload_failed")
+    upload_result = cloudinary.uploader.upload(
+        buffer,
+        folder="memes/ai/",
+        resource_type="image",
+    )
 
     return upload_result["public_id"]
-
 
 
 
