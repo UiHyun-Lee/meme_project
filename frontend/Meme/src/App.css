@@ -1631,9 +1631,10 @@ p, li, a {
     flex-direction: column;
   }
 
-  .topic-dropdown {
-    width: 100%;
-    max-width: 18.75rem;
+  .topic-dropdown { /*Drop down flexibel*/
+    min-width: fit-content;
+    width: auto;
+    max-width: 90%;
   }
 }
 
