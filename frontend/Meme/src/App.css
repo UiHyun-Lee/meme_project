@@ -1631,7 +1631,7 @@ p, li, a {
     flex-direction: column;
   }
 
-  .topic-dropdown {
+  .topic-dropdown { /*Drop down flexibel*/
     min-width: fit-content;
     width: auto;
     max-width: 90%;
