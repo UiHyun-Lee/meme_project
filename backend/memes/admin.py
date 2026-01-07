@@ -1,4 +1,8 @@
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
+
 from .models import Category, MemeTemplate, Meme, WeeklyTopic
 
 @admin.register(Category)
@@ -12,6 +16,24 @@ class MemeTemplateAdmin(admin.ModelAdmin):
     list_filter = ("category",)
     search_fields = ("description",)
 
+@admin.action(description="Export selected memes to CSV")
+def export_memes_csv(modeladmin, request, queryset):
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="memes_elo.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(["MemeID", "MemeType", "Topic", "Elo"])
+
+    for meme in queryset:
+        writer.writerow([
+            meme.id,
+            meme.created_by,
+            meme.topic,
+            meme.rating,
+        ])
+
+    return response
+
 @admin.register(Meme)
 class MemeAdmin(admin.ModelAdmin):
     list_display = ("id", "created_by", "topic", "template", "created_at")
@@ -19,6 +41,8 @@ class MemeAdmin(admin.ModelAdmin):
     search_fields = ("caption", "topic")
 
     readonly_fields = ("image_preview",)
+
+    actions = [export_memes_csv]
 
     def image_preview(self, obj):
         if obj.image:
