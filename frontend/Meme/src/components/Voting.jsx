@@ -94,7 +94,7 @@ const Voting = () => {
       const res = await getRandomMemes();
       let memesData = res.data;
 
-      // (optional) human/ai zufällig tauschen – Logik aus beiden Files
+      
       if (memesData.length === 2) {
         const [m1, m2] = memesData;
         if (m1.created_by !== m2.created_by && Math.random() < 0.5) {
@@ -118,7 +118,7 @@ const Voting = () => {
   };
 
   const handleVote = async (winnerId) => {
-    // 2. Cookie-Logik & Blocking: Abstimmung nur mit Consent
+    // Cookie-Logik & Blocking: Abstimmung nur mit Consent
     if (!cookieConsent) {
       setMessage("Please accept cookies first to vote! 🍪");
       setTimeout(() => setMessage(""), 2000);
@@ -130,7 +130,7 @@ const Voting = () => {
     const isMobile =
       typeof window !== "undefined" ? window.innerWidth <= 768 : false;
 
-    // 1./4. Mobile: Erst voten, wenn alle Memes gesehen
+    // Mobile: Erst voten, wenn alle Memes gesehen
     if (isMobile && memes.length >= 2) {
       const allSeen = memes.every((meme) => seenMemes.has(meme.id));
       if (!allSeen) {
@@ -142,7 +142,7 @@ const Voting = () => {
       }
     }
 
-    // existierende Logik aus new.jsx: winner/loser für Backend
+    // existierende Logik: winner/loser für Backend
     const [m0, m1] = memes;
     const loserId = winnerId === m0.id ? m1.id : m0.id;
 
@@ -166,7 +166,7 @@ const Voting = () => {
   };
 
   const reportMeme = (memeId) => {
-    // 2. Cookie-Logik & Blocking auch fürs Melden
+    // Cookie-Logik & Blocking auch fürs Melden
     if (!cookieConsent) {
       alert("Please accept cookies first to report memes! 🍪");
       return;
@@ -175,7 +175,7 @@ const Voting = () => {
     // ggf. hier noch report-API
   };
 
-  // 2. Block-Overlay, wenn (noch) kein Cookie-Consent
+  // Block-Overlay, wenn (noch) kein Cookie-Consent
   const renderBlockOverlay = () => {
     if (cookieConsent || !showCookieBanner) return null;
 
@@ -241,17 +241,17 @@ const Voting = () => {
   const isMobileView =
     typeof window !== "undefined" && window.innerWidth <= 768;
 
-  // 1./4. Auf Mobile: haben wir alle gesehen?
+  // Auf Mobile: haben wir alle gesehen?
   const allMemesSeen = isMobileView
     ? memes.every((meme) => seenMemes.has(meme.id))
     : true;
 
-  // FIX: nur gesehene Memes der aktuellen Runde zählen
+  // nur gesehene Memes der aktuellen Runde zählen
   const seenCount = memes.filter((meme) => seenMemes.has(meme.id)).length;
 
   return (
     <>
-      {/* 2. Block-Overlay bei fehlendem Cookie-Consent */}
+      {/* Block-Overlay bei fehlendem Cookie-Consent */}
       {renderBlockOverlay()}
 
       <div
@@ -275,7 +275,7 @@ const Voting = () => {
             color: "white",
             paddingBottom: "5vh",
             textAlign: "center",
-            // 2. Blur & Interaktionen blocken, wenn kein Consent
+            // Blur & Interaktionen blocken, wenn kein Consent
             filter: !cookieConsent ? "blur(0.4vh)" : "none",
             pointerEvents: !cookieConsent ? "none" : "auto",
             position: "relative",
@@ -290,7 +290,7 @@ const Voting = () => {
             </span>
           </p>
 
-          {/* 4. Mobile Hinweis (nur Mobile & wenn noch nicht alle gesehen) */}
+          {/* Mobile Hinweis (nur Mobile & wenn noch nicht alle gesehen) */}
           {isMobileView && !allMemesSeen && (
             <div
               className="mobile-vote-hint"
@@ -335,7 +335,7 @@ const Voting = () => {
             ))}
           </div>
 
-          {/* MOBILE VERSION — Slider mit Seen-Tracking & UI-Details */}
+          {/* MOBILE VERSION - Slider mit Seen-Tracking */}
           <div className="mobile-meme-slider">
             {/* LEFT ARROW */}
             <button
@@ -382,7 +382,7 @@ const Voting = () => {
                           alt={`Meme ${index}`}
                         />
 
-                        {/* 4. Mobile-Meldungen direkt auf der aktuellen Karte */}
+                        {/* Mobile-Meldungen direkt auf der aktuellen Karte */}
                         {isMobileView && message && index === activeIndex && (
                           <div
                             className={`mobile-vote-message ${
@@ -393,7 +393,7 @@ const Voting = () => {
                           </div>
                         )}
 
-                        {/* 4. Sichtbarkeits-Indikator */}
+                        {/* Sichtbarkeits-Indikator */}
                         {!isSeen && (
                           <div
                             style={{
@@ -444,7 +444,7 @@ const Voting = () => {
             </button>
           </div>
 
-          {/* 4. Progress-Anzeige für Mobile */}
+          {/* Progress-Anzeige für Mobile */}
           {isMobileView && memes.length >= 2 && (
             <div
               className="mobile-progress"
@@ -484,7 +484,7 @@ const Voting = () => {
             </div>
           )}
 
-          {/* FOOTER mit Cookie Settings (5. Cookie-Banner-Integration) */}
+          {/* FOOTER mit Cookie Settings (Cookie-Banner-Integration) */}
           <footer className="site-footer">
             <div className="footer-links">
               <a
@@ -512,7 +512,7 @@ const Voting = () => {
           </footer>
         </div>
 
-        {/* 5. Cookie-Banner immer außerhalb des geblurten Bereichs */}
+        {/* Cookie-Banner immer außerhalb des geblurten Bereichs */}
         {showCookieBanner && (
           <div
             style={{

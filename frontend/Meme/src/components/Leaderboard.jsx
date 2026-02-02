@@ -173,7 +173,7 @@ const initLeaderboard = async () => {
   ))}
 </select>
     </div>
-
+      {/*Leaderboard tabelle*/}
           <table className="leaderboard-table">
             <thead>
               <tr>
@@ -211,7 +211,7 @@ const initLeaderboard = async () => {
         </div>
       )}
 
-      {/* HUMANS VS AI — summary + Human/AI top 10 */}
+      {/* HUMANS VS AI*/}
       {activeTab === "humansVsAi" && (
         <div className="tab-content">
 

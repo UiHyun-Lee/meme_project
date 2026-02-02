@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-
+{/*ANimation to make website visually compelling*/}
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const Typewriter = ({ text, speed = 70, delayBeforeStart = 0 }) => {
