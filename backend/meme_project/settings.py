@@ -27,7 +27,6 @@ if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = "django-insecure-(919nu*#mi0n=m_&9ke*zp9aqu=3-v)@@&jj)y+!%e)gv-*_aj"
 # SECRET_KEY
 SECRET_KEY = os.environ.get("SECRET_KEY", None)
 

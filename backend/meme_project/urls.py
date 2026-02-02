@@ -85,14 +85,11 @@ urlpatterns = [
     # Leaderboard sorted by votes
     # path('api/leaderboard/', leaderboard),
 
-
     # Google Login
     path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
 
-
     # CRUD Routers
     path('api/', include(router.urls)),
-
 
     # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain'),
