@@ -103,6 +103,13 @@ def generate_ai_meme_design(
     template_url: str,
 ) -> dict:
 
+    """
+    Core AI pipeline:
+    - Send template image + topic to Vision model
+    - Receive structured JSON (text + bounding boxes)
+    - Enforce strict schema for safe automatic rendering
+    """
+
     # settings
     main_model = getattr(settings, "OPENAI_VISION_MODEL_MAIN", "gpt-4o")
     # alt_model = getattr(settings, "OPENAI_VISION_MODEL_ALT", None)
@@ -453,6 +460,7 @@ def apply_ai_text_to_image(template_url: str, captions: list) -> str:
             max_w = int(bw * W)
             max_h = int(bh * H)
 
+            # If bounding box is too small, fallback to default placement
             if max_w < int(W * 0.25) or max_h < int(H * 0.10):
                 box = None
             else:
@@ -538,6 +546,12 @@ def ensure_ai_balance_for_topic(
     max_diff: int = 3,
     max_new: int = 1,  # Todo : ??
 ) -> None:
+
+    """
+    Keeps dataset roughly balanced:
+    - AI memes are generated only if human memes dominate
+    - Prevents overwriting AI memes with existing votes
+    """
 
     human_count = Meme.objects.filter(topic=topic, created_by="human").count()
     ai_count = Meme.objects.filter(topic=topic, created_by="ai").count()
