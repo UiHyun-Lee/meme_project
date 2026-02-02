@@ -67,9 +67,7 @@ class MemeViewSet(viewsets.ModelViewSet):
     serializer_class = MemeSerializer
 
 
-# =========================
 # Weekly topic
-# =========================
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def current_topic_view(request):
@@ -168,7 +166,7 @@ def generate_multiple_ai_memes(request):
 
         print("generate_multiple_ai_memes: OpenAI call for template", template.id)
 
-        # 6) OpenAI 호출
+        # OpenAI call
         design = generate_ai_meme_design(
             topic=current_topic,
             category_name=category_name,
@@ -214,7 +212,7 @@ def generate_multiple_ai_memes(request):
             print("apply_ai_text_to_image error:", repr(e))
             continue
 
-        # 8) DB 저장
+        # DB save
         full_caption = " / ".join([(b.get("text") or "").strip() for b in valid_blocks]).strip()
         if not full_caption:
             full_caption = "AI meme"
@@ -309,7 +307,7 @@ def generate_ai_meme(request):
             continue
 
         try:
-            public_id = apply_ai_text_to_image(template_image_url, blocks)  # ✅ blocks 묶음 그대로
+            public_id = apply_ai_text_to_image(template_image_url, blocks)
         except Exception as e:
             print("apply_ai_text_to_image error:", repr(e))
             continue
@@ -478,7 +476,7 @@ class UserMemeUploadView(APIView):
             topic=current_topic,
         )
 
-        # AI balance (최대 1개만 생성)
+        # AI balance
         try:
             ensure_ai_balance_for_topic(
                 topic=current_topic,
