@@ -1,4 +1,4 @@
-##Bachelorarbiet- Meme Project
+Bachelorarbiet- Meme Project
 
 
 ## About the Project
