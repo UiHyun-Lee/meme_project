@@ -6,7 +6,7 @@ Bachelorarbiet- Meme Project
 This site was created to:
 
 This project was developed as part of my bachelor's thesis.  
-It is a web application built with React (frontend) and Django (backend).
+It is a web application built with React and Django.
 
 The platform allows both an AI model and human users to generate memes based on the same given topic.  
 Users can then vote on which meme they find funnier, enabling a comparison between AI-generated and human-created humor.
