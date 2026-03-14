@@ -1,7 +1,7 @@
 ##Bachelorarbiet- Meme Project
 
 
-# About the Project
+## About the Project
 
 This site was created to:
 
